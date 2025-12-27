@@ -1,0 +1,95 @@
+{
+  "name": "stocks_v2",
+  "background": "#000000",
+  "refresh_seconds": 300,
+  "widgets": [
+    {
+      "type": "text",
+      "x": 2,
+      "y": 2,
+      "font": "5x7",
+      "text": "AAPL",
+      "color": "#888888"
+    },
+    {
+      "type": "text",
+      "id": "aapl_price",
+      "x": 2,
+      "y": 11,
+      "font": "5x7",
+      "data_source": "stocks.AAPL.price",
+      "format": "${value:.0f}",
+      "color": {
+        "conditions": [
+          { "when": "stocks.AAPL.change < 0", "color": "#FF0000" },
+          { "when": "stocks.AAPL.change >= 0", "color": "#00FF00" }
+        ],
+        "default": "#FFFFFF"
+      }
+    },
+    {
+      "type": "line",
+      "x1": 0,
+      "y1": 20,
+      "x2": 63,
+      "y2": 20,
+      "color": "#333333"
+    },
+    {
+      "type": "text",
+      "x": 2,
+      "y": 23,
+      "font": "5x7",
+      "text": "GOOGL",
+      "color": "#888888"
+    },
+    {
+      "type": "text",
+      "id": "googl_price",
+      "x": 2,
+      "y": 32,
+      "font": "5x7",
+      "data_source": "stocks.GOOGL.price",
+      "format": "${value:.0f}",
+      "color": {
+        "conditions": [
+          { "when": "stocks.GOOGL.change < 0", "color": "#FF0000" },
+          { "when": "stocks.GOOGL.change >= 0", "color": "#00FF00" }
+        ],
+        "default": "#FFFFFF"
+      }
+    },
+    {
+      "type": "line",
+      "x1": 0,
+      "y1": 41,
+      "x2": 63,
+      "y2": 41,
+      "color": "#333333"
+    },
+    {
+      "type": "text",
+      "x": 2,
+      "y": 44,
+      "font": "5x7",
+      "text": "MSFT",
+      "color": "#888888"
+    },
+    {
+      "type": "text",
+      "id": "msft_price",
+      "x": 2,
+      "y": 53,
+      "font": "5x7",
+      "data_source": "stocks.MSFT.price",
+      "format": "${value:.0f}",
+      "color": {
+        "conditions": [
+          { "when": "stocks.MSFT.change < 0", "color": "#FF0000" },
+          { "when": "stocks.MSFT.change >= 0", "color": "#00FF00" }
+        ],
+        "default": "#FFFFFF"
+      }
+    }
+  ]
+}

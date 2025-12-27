@@ -104,6 +104,28 @@ class Pixoo:
             "OnOff": 1 if on else 0,
         })
 
+    def set_channel(self, channel: int) -> dict:
+        """Set the display channel.
+
+        Args:
+            channel: Channel index (0=Faces, 1=Cloud, 2=Visualizer, 3=Custom, 4=Black)
+
+        Returns:
+            Response from device
+        """
+        return self._send_command({
+            "Command": "Channel/SetIndex",
+            "SelectIndex": channel,
+        })
+
+    def reset_gif(self) -> dict:
+        """Reset the HTTP GIF buffer. Call before sending new frames.
+
+        Returns:
+            Response from device
+        """
+        return self._send_command({"Command": "Draw/ResetHttpGifId"})
+
     def send_image(self, image: Image.Image, pic_num: int = 0) -> dict:
         """Send an image to the display.
 
@@ -114,6 +136,9 @@ class Pixoo:
         Returns:
             Response from device
         """
+        # Reset buffer before sending
+        self.reset_gif()
+
         if image.size != (PIXOO_SIZE, PIXOO_SIZE):
             image = image.resize((PIXOO_SIZE, PIXOO_SIZE), Image.Resampling.NEAREST)
 
@@ -148,6 +173,9 @@ class Pixoo:
         """
         if len(pixels) != PIXOO_SIZE * PIXOO_SIZE:
             raise ValueError(f"Expected {PIXOO_SIZE * PIXOO_SIZE} pixels, got {len(pixels)}")
+
+        # Reset buffer before sending
+        self.reset_gif()
 
         pixel_data = []
         for r, g, b in pixels:
