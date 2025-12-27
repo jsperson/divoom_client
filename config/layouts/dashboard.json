@@ -1,0 +1,152 @@
+{
+  "name": "dashboard",
+  "background": "#000000",
+  "refresh_seconds": 300,
+  "widgets": [
+    {
+      "type": "text",
+      "x": 2,
+      "y": 2,
+      "font": "5x7",
+      "text": "HESSTON",
+      "color": "#00AAFF"
+    },
+    {
+      "type": "text",
+      "x": 44,
+      "y": 2,
+      "font": "4x6",
+      "data_source": "weather.temp",
+      "format": "{value}°",
+      "color": "#FFAA00"
+    },
+    {
+      "type": "line",
+      "x1": 0,
+      "y1": 11,
+      "x2": 63,
+      "y2": 11,
+      "color": "#333333"
+    },
+    {
+      "type": "text",
+      "x": 2,
+      "y": 14,
+      "font": "4x6",
+      "text": "AAPL",
+      "color": "#666666"
+    },
+    {
+      "type": "text",
+      "x": 28,
+      "y": 14,
+      "font": "4x6",
+      "data_source": "stocks.AAPL.price",
+      "format": "${value:.0f}",
+      "color": {
+        "conditions": [
+          { "when": "stocks.AAPL.change < 0", "color": "#FF0000" },
+          { "when": "stocks.AAPL.change >= 0", "color": "#00FF00" }
+        ],
+        "default": "#FFFFFF"
+      }
+    },
+    {
+      "type": "text",
+      "x": 2,
+      "y": 22,
+      "font": "4x6",
+      "text": "GOOGL",
+      "color": "#666666"
+    },
+    {
+      "type": "text",
+      "x": 28,
+      "y": 22,
+      "font": "4x6",
+      "data_source": "stocks.GOOGL.price",
+      "format": "${value:.0f}",
+      "color": {
+        "conditions": [
+          { "when": "stocks.GOOGL.change < 0", "color": "#FF0000" },
+          { "when": "stocks.GOOGL.change >= 0", "color": "#00FF00" }
+        ],
+        "default": "#FFFFFF"
+      }
+    },
+    {
+      "type": "text",
+      "x": 2,
+      "y": 30,
+      "font": "4x6",
+      "text": "MSFT",
+      "color": "#666666"
+    },
+    {
+      "type": "text",
+      "x": 28,
+      "y": 30,
+      "font": "4x6",
+      "data_source": "stocks.MSFT.price",
+      "format": "${value:.0f}",
+      "color": {
+        "conditions": [
+          { "when": "stocks.MSFT.change < 0", "color": "#FF0000" },
+          { "when": "stocks.MSFT.change >= 0", "color": "#00FF00" }
+        ],
+        "default": "#FFFFFF"
+      }
+    },
+    {
+      "type": "line",
+      "x1": 0,
+      "y1": 38,
+      "x2": 63,
+      "y2": 38,
+      "color": "#333333"
+    },
+    {
+      "type": "text",
+      "x": 2,
+      "y": 42,
+      "font": "4x6",
+      "data_source": "weather.main",
+      "format": "{value}",
+      "color": "#888888"
+    },
+    {
+      "type": "text",
+      "x": 2,
+      "y": 50,
+      "font": "4x6",
+      "text": "Hi",
+      "color": "#666666"
+    },
+    {
+      "type": "text",
+      "x": 14,
+      "y": 50,
+      "font": "4x6",
+      "data_source": "weather.temp_max",
+      "format": "{value}°",
+      "color": "#FF6666"
+    },
+    {
+      "type": "text",
+      "x": 34,
+      "y": 50,
+      "font": "4x6",
+      "text": "Lo",
+      "color": "#666666"
+    },
+    {
+      "type": "text",
+      "x": 46,
+      "y": 50,
+      "font": "4x6",
+      "data_source": "weather.temp_min",
+      "format": "{value}°",
+      "color": "#6666FF"
+    }
+  ]
+}

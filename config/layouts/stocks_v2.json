@@ -5,10 +5,13 @@
   "widgets": [
     {
       "type": "text",
+      "id": null,
       "x": 2,
       "y": 2,
       "font": "5x7",
+      "data_source": null,
       "text": "AAPL",
+      "format": "{value}",
       "color": "#888888"
     },
     {
@@ -18,17 +21,25 @@
       "y": 11,
       "font": "5x7",
       "data_source": "stocks.AAPL.price",
+      "text": null,
       "format": "${value:.0f}",
       "color": {
         "conditions": [
-          { "when": "stocks.AAPL.change < 0", "color": "#FF0000" },
-          { "when": "stocks.AAPL.change >= 0", "color": "#00FF00" }
+          {
+            "when": "stocks.AAPL.change < 0",
+            "color": "#FF0000"
+          },
+          {
+            "when": "stocks.AAPL.change >= 0",
+            "color": "#00FF00"
+          }
         ],
         "default": "#FFFFFF"
       }
     },
     {
       "type": "line",
+      "id": null,
       "x1": 0,
       "y1": 20,
       "x2": 63,
@@ -37,10 +48,13 @@
     },
     {
       "type": "text",
+      "id": null,
       "x": 2,
       "y": 23,
       "font": "5x7",
+      "data_source": null,
       "text": "GOOGL",
+      "format": "{value}",
       "color": "#888888"
     },
     {
@@ -50,17 +64,25 @@
       "y": 32,
       "font": "5x7",
       "data_source": "stocks.GOOGL.price",
+      "text": null,
       "format": "${value:.0f}",
       "color": {
         "conditions": [
-          { "when": "stocks.GOOGL.change < 0", "color": "#FF0000" },
-          { "when": "stocks.GOOGL.change >= 0", "color": "#00FF00" }
+          {
+            "when": "stocks.GOOGL.change < 0",
+            "color": "#FF0000"
+          },
+          {
+            "when": "stocks.GOOGL.change >= 0",
+            "color": "#00FF00"
+          }
         ],
         "default": "#FFFFFF"
       }
     },
     {
       "type": "line",
+      "id": null,
       "x1": 0,
       "y1": 41,
       "x2": 63,
@@ -69,10 +91,13 @@
     },
     {
       "type": "text",
+      "id": null,
       "x": 2,
       "y": 44,
       "font": "5x7",
+      "data_source": null,
       "text": "MSFT",
+      "format": "{value}",
       "color": "#888888"
     },
     {
@@ -82,11 +107,18 @@
       "y": 53,
       "font": "5x7",
       "data_source": "stocks.MSFT.price",
+      "text": null,
       "format": "${value:.0f}",
       "color": {
         "conditions": [
-          { "when": "stocks.MSFT.change < 0", "color": "#FF0000" },
-          { "when": "stocks.MSFT.change >= 0", "color": "#00FF00" }
+          {
+            "when": "stocks.MSFT.change < 0",
+            "color": "#FF0000"
+          },
+          {
+            "when": "stocks.MSFT.change >= 0",
+            "color": "#00FF00"
+          }
         ],
         "default": "#FFFFFF"
       }

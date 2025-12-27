@@ -2,14 +2,19 @@
   "sources": {
     "stocks": {
       "type": "stocks",
-      "symbols": ["AAPL", "GOOGL", "MSFT"],
-      "refresh_seconds": 300
+      "symbols": [
+        "AAPL",
+        "GOOGL",
+        "MSFT"
+      ],
+      "refresh_seconds": 300,
+      "enabled": true
     },
     "weather": {
       "type": "weather",
-      "enabled": false,
-      "api_key": "${OPENWEATHER_API_KEY}",
-      "location": "San Francisco,US",
+      "enabled": true,
+      "api_key": "fba54e0a9a051fe805d08f1c1f85d405",
+      "location": "Hesston,KS,US",
       "units": "imperial",
       "refresh_seconds": 600
     }

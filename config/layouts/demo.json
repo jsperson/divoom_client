@@ -5,11 +5,13 @@
   "widgets": [
     {
       "type": "rect",
+      "id": null,
       "x": 0,
       "y": 0,
       "width": 64,
       "height": 10,
-      "color": "#003366"
+      "color": "#003366",
+      "filled": true
     },
     {
       "type": "text",
@@ -17,11 +19,14 @@
       "x": 8,
       "y": 2,
       "font": "5x7",
+      "data_source": null,
       "text": "PIXOO 64",
+      "format": "{value}",
       "color": "#FFFFFF"
     },
     {
       "type": "line",
+      "id": null,
       "x1": 0,
       "y1": 10,
       "x2": 63,
@@ -34,7 +39,9 @@
       "x": 2,
       "y": 14,
       "font": "5x7",
+      "data_source": null,
       "text": "AAPL",
+      "format": "{value}",
       "color": "#888888"
     },
     {
@@ -44,11 +51,18 @@
       "y": 24,
       "font": "5x7",
       "data_source": "stocks.AAPL.price",
+      "text": null,
       "format": "${value:.2f}",
       "color": {
         "conditions": [
-          { "when": "stocks.AAPL.change < 0", "color": "#FF4444" },
-          { "when": "stocks.AAPL.change >= 0", "color": "#44FF44" }
+          {
+            "when": "stocks.AAPL.change < 0",
+            "color": "#FF4444"
+          },
+          {
+            "when": "stocks.AAPL.change >= 0",
+            "color": "#44FF44"
+          }
         ],
         "default": "#FFFFFF"
       }
@@ -58,8 +72,10 @@
       "id": "temp_label",
       "x": 2,
       "y": 38,
-      "font": "5x7",
-      "text": "TEMP",
+      "font": "4x6",
+      "data_source": null,
+      "text": "Feels Like.....",
+      "format": "{value}",
       "color": "#888888"
     },
     {
@@ -68,17 +84,20 @@
       "x": 2,
       "y": 48,
       "font": "5x7",
-      "data_source": "weather.temp",
-      "format": "{value}°F",
+      "data_source": "weather.feels_like",
+      "text": null,
+      "format": "{value}\u00b0F",
       "color": "#00AAFF"
     },
     {
       "type": "rect",
+      "id": null,
       "x": 0,
       "y": 58,
       "width": 64,
       "height": 6,
-      "color": "#222222"
+      "color": "#222222",
+      "filled": true
     }
   ]
 }

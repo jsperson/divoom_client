@@ -23,6 +23,7 @@ dependencies = [
     "requests>=2.31.0",
     "Pillow>=10.0.0",
     "jsonpath-ng>=1.6.0",
+    "python-multipart>=0.0.6",
 ]
 
 [project.optional-dependencies]

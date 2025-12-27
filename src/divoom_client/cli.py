@@ -365,13 +365,21 @@ def fetch(
                 typer.echo(f"Unknown data source: {source}", err=True)
                 typer.echo(f"Available sources: {list(manager.sources.keys())}")
                 raise typer.Exit(1)
-            data = await manager.refresh(source)
-            return {source: data}
+            try:
+                data = await manager.refresh(source)
+                return {source: data}
+            except Exception as e:
+                typer.echo(f"ERROR: Failed to fetch {source}: {e}", err=True)
+                return {}
         else:
             return await manager.refresh_all()
 
     typer.echo(f"Fetching data from {len(manager.sources)} source(s)...")
-    data = asyncio.run(do_fetch())
+    try:
+        data = asyncio.run(do_fetch())
+    except Exception as e:
+        typer.echo(f"ERROR: Fetch failed: {e}", err=True)
+        raise typer.Exit(1)
 
     if output:
         with open(output, "w") as f:
