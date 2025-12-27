@@ -1,0 +1,17 @@
+{
+  "sources": {
+    "stocks": {
+      "type": "stocks",
+      "symbols": ["AAPL", "GOOGL", "MSFT"],
+      "refresh_seconds": 300
+    },
+    "weather": {
+      "type": "weather",
+      "enabled": false,
+      "api_key": "${OPENWEATHER_API_KEY}",
+      "location": "San Francisco,US",
+      "units": "imperial",
+      "refresh_seconds": 600
+    }
+  }
+}

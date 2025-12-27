@@ -1,0 +1,12 @@
+{
+  "stocks": {
+    "AAPL": {
+      "price": 185.42,
+      "change": 2.35
+    }
+  },
+  "weather": {
+    "temp": 72,
+    "icon": "sunny"
+  }
+}
