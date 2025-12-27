@@ -381,6 +381,30 @@ def create_app(display_manager: Any) -> FastAPI:
         except Exception:
             return {"connected": False}
 
+    @app.post("/api/device/scan")
+    async def scan_for_devices() -> dict[str, Any]:
+        """Scan network for Pixoo devices."""
+        from divoom_client.core.discovery import scan_network
+        try:
+            devices = scan_network()
+            return {"devices": devices, "count": len(devices)}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.post("/api/device/connect/{ip}")
+    async def connect_to_device(ip: str) -> dict[str, Any]:
+        """Connect to a specific device and save to config."""
+        from divoom_client.core.discovery import save_device_config
+        from divoom_client.models.config import DeviceConfig
+        try:
+            display_manager.connect(ip)
+            config = DeviceConfig(ip_address=ip)
+            config_path = display_manager.config_dir / "device.json"
+            save_device_config(config, config_path)
+            return {"success": True, "ip": ip}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
     # --- Data Source APIs ---
 
     @app.get("/api/datasources")
@@ -1120,6 +1144,10 @@ def get_index_html() -> str:
                     <button onclick="addWidget('text')">+ Text</button>
                     <button onclick="addWidget('rect')">+ Rectangle</button>
                     <button onclick="addWidget('line')">+ Line</button>
+                    <span style="border-left: 1px solid #444; margin: 0 8px;"></span>
+                    <button id="undo-btn" onclick="undo()" disabled title="Undo (Ctrl+Z)">Undo</button>
+                    <button id="redo-btn" onclick="redo()" disabled title="Redo (Ctrl+Y)">Redo</button>
+                    <span style="border-left: 1px solid #444; margin: 0 8px;"></span>
                     <button class="secondary" onclick="toggleGrid()">Toggle Grid</button>
                     <button class="danger" onclick="deleteSelectedWidget()">Delete</button>
                     <button onclick="saveCurrentLayout()">Save Layout</button>
@@ -1247,6 +1275,15 @@ def get_index_html() -> str:
                         <button class="secondary" onclick="pingDevice()">Test Connection</button>
                     </div>
                 </div>
+
+                <div class="card">
+                    <h2>Device Discovery</h2>
+                    <p style="color: #888; margin-bottom: 15px;">Scan network for Pixoo devices</p>
+                    <div style="margin-bottom: 15px;">
+                        <button id="scan-btn" onclick="scanForDevices()">Scan Network</button>
+                    </div>
+                    <div id="scan-results"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -1310,6 +1347,11 @@ def get_index_html() -> str:
         let powerState = true;
         let gridVisible = true;
         let pendingChanges = {};  // Track unsaved property changes
+
+        // Undo/Redo history
+        let undoStack = [];
+        let redoStack = [];
+        const MAX_HISTORY = 50;
 
         // ==================== Tab Navigation ====================
         document.querySelectorAll('.tab').forEach(tab => {
@@ -1513,6 +1555,10 @@ def get_index_html() -> str:
                     const res = await fetch('/api/layout');
                     currentLayoutData = await res.json();
                     document.getElementById('current-layout-name').textContent = currentLayout;
+                    // Clear history when loading new layout
+                    undoStack = [];
+                    redoStack = [];
+                    updateUndoRedoButtons();
                     renderCanvas();
                     updateWidgetList();
                 } catch (e) {
@@ -1520,6 +1566,76 @@ def get_index_html() -> str:
                 }
             }
         }
+
+        // ==================== Undo/Redo ====================
+        function saveToHistory() {
+            if (!currentLayoutData) return;
+            undoStack.push(JSON.stringify(currentLayoutData));
+            if (undoStack.length > MAX_HISTORY) undoStack.shift();
+            redoStack = [];  // Clear redo on new action
+            updateUndoRedoButtons();
+        }
+
+        function undo() {
+            if (undoStack.length === 0) return;
+            redoStack.push(JSON.stringify(currentLayoutData));
+            currentLayoutData = JSON.parse(undoStack.pop());
+            selectedWidget = null;
+            pendingChanges = {};
+            renderCanvas();
+            updateWidgetList();
+            updatePropertyPanel();
+            updateUndoRedoButtons();
+            saveLayoutToServer();
+        }
+
+        function redo() {
+            if (redoStack.length === 0) return;
+            undoStack.push(JSON.stringify(currentLayoutData));
+            currentLayoutData = JSON.parse(redoStack.pop());
+            selectedWidget = null;
+            pendingChanges = {};
+            renderCanvas();
+            updateWidgetList();
+            updatePropertyPanel();
+            updateUndoRedoButtons();
+            saveLayoutToServer();
+        }
+
+        function updateUndoRedoButtons() {
+            const undoBtn = document.getElementById('undo-btn');
+            const redoBtn = document.getElementById('redo-btn');
+            if (undoBtn) undoBtn.disabled = undoStack.length === 0;
+            if (redoBtn) redoBtn.disabled = redoStack.length === 0;
+        }
+
+        async function saveLayoutToServer() {
+            if (!currentLayout || !currentLayoutData) return;
+            try {
+                await fetch('/api/layouts/' + currentLayout, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({layout: currentLayoutData})
+                });
+            } catch (e) {
+                log('Failed to save layout: ' + e, 'error');
+            }
+        }
+
+        // Keyboard shortcuts for undo/redo
+        document.addEventListener('keydown', (e) => {
+            // Only handle if editor tab is active
+            const editorTab = document.getElementById('tab-editor');
+            if (!editorTab || !editorTab.classList.contains('active')) return;
+
+            if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+            } else if (e.ctrlKey && (e.key === 'y' || (e.key === 'Z' && e.shiftKey))) {
+                e.preventDefault();
+                redo();
+            }
+        });
 
         function renderCanvas() {
             if (!currentLayoutData) return;
@@ -1799,6 +1915,9 @@ def get_index_html() -> str:
                 return;
             }
 
+            // Save current state for undo before making changes
+            saveToHistory();
+
             const applyBtn = document.getElementById('apply-btn');
             if (applyBtn) {
                 applyBtn.disabled = true;
@@ -1866,6 +1985,9 @@ def get_index_html() -> str:
                     break;
             }
 
+            // Save current state for undo before adding widget
+            saveToHistory();
+
             try {
                 const res = await fetch('/api/layout/widget', {
                     method: 'POST',
@@ -1894,6 +2016,9 @@ def get_index_html() -> str:
             }
 
             if (!confirm('Delete this widget?')) return;
+
+            // Save current state for undo before deleting widget
+            saveToHistory();
 
             try {
                 const res = await fetch('/api/layout/widget/' + selectedWidget.id, { method: 'DELETE' });
@@ -2345,6 +2470,59 @@ def get_index_html() -> str:
                 }
             } catch (e) {
                 log('Ping failed: ' + e, 'error');
+            }
+        }
+
+        async function scanForDevices() {
+            const btn = document.getElementById('scan-btn');
+            const results = document.getElementById('scan-results');
+            btn.disabled = true;
+            btn.textContent = 'Scanning...';
+            results.innerHTML = '<p style="color:#888">Scanning network...</p>';
+
+            try {
+                const res = await fetch('/api/device/scan', { method: 'POST' });
+                const data = await res.json();
+
+                if (data.devices && data.devices.length > 0) {
+                    let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+                    for (const ip of data.devices) {
+                        html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #2a2a2a; border-radius: 4px;">
+                            <span>${ip}</span>
+                            <button onclick="connectToDevice('${ip}')" class="secondary" style="padding: 4px 12px;">Connect</button>
+                        </div>`;
+                    }
+                    html += '</div>';
+                    results.innerHTML = html;
+                    log('Found ' + data.count + ' device(s)', 'success');
+                } else {
+                    results.innerHTML = '<p style="color:#888">No devices found</p>';
+                    log('No devices found on network', 'info');
+                }
+            } catch (e) {
+                results.innerHTML = '<p style="color:#f55">Scan failed: ' + e + '</p>';
+                log('Scan failed: ' + e, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Scan Network';
+            }
+        }
+
+        async function connectToDevice(ip) {
+            try {
+                log('Connecting to ' + ip + '...', 'info');
+                const res = await fetch('/api/device/connect/' + ip, { method: 'POST' });
+                const data = await res.json();
+
+                if (data.success) {
+                    log('Connected to ' + ip, 'success');
+                    document.getElementById('device-ip').textContent = ip;
+                    document.getElementById('connection-status').textContent = 'Connected';
+                    document.getElementById('connection-status').className = 'status-value connected';
+                    await loadDeviceInfo();
+                }
+            } catch (e) {
+                log('Connection failed: ' + e, 'error');
             }
         }
 
