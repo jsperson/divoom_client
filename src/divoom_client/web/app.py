@@ -1353,6 +1353,16 @@ def get_index_html() -> str:
         let redoStack = [];
         const MAX_HISTORY = 50;
 
+        // Drag state
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let dragWidgetStartX = 0;
+        let dragWidgetStartY = 0;
+        let dragWidgetStartX2 = 0;  // For line widgets
+        let dragWidgetStartY2 = 0;  // For line widgets
+        let dragHistorySaved = false;  // Track if we saved history for this drag
+
         // ==================== Tab Navigation ====================
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
@@ -2101,8 +2111,8 @@ def get_index_html() -> str:
             }
         }
 
-        // Canvas click handler
-        canvas.addEventListener('click', (e) => {
+        // Canvas mouse handlers for selection and dragging
+        canvas.addEventListener('mousedown', (e) => {
             const rect = canvas.getBoundingClientRect();
             const x = Math.floor((e.clientX - rect.left) / SCALE);
             const y = Math.floor((e.clientY - rect.top) / SCALE);
@@ -2116,10 +2126,112 @@ def get_index_html() -> str:
                 }
             }
 
-            selectedWidget = found;
+            if (found) {
+                selectedWidget = found;
+                isDragging = true;
+                dragHistorySaved = false;
+                dragStartX = x;
+                dragStartY = y;
+                // Store original position based on widget type
+                if (found.type === 'line') {
+                    dragWidgetStartX = found.x1 || 0;
+                    dragWidgetStartY = found.y1 || 0;
+                    dragWidgetStartX2 = found.x2 || 0;
+                    dragWidgetStartY2 = found.y2 || 0;
+                } else {
+                    dragWidgetStartX = found.x || 0;
+                    dragWidgetStartY = found.y || 0;
+                }
+                canvas.style.cursor = 'grabbing';
+            } else {
+                selectedWidget = null;
+            }
+
             renderCanvas();
             updateWidgetList();
             updatePropertyPanel();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging || !selectedWidget) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor((e.clientX - rect.left) / SCALE);
+            const y = Math.floor((e.clientY - rect.top) / SCALE);
+
+            const deltaX = x - dragStartX;
+            const deltaY = y - dragStartY;
+
+            // Save history on first actual movement
+            if (!dragHistorySaved && (deltaX !== 0 || deltaY !== 0)) {
+                saveToHistory();
+                dragHistorySaved = true;
+            }
+
+            // Update widget position based on type
+            if (selectedWidget.type === 'line') {
+                selectedWidget.x1 = Math.max(0, Math.min(63, dragWidgetStartX + deltaX));
+                selectedWidget.y1 = Math.max(0, Math.min(63, dragWidgetStartY + deltaY));
+                selectedWidget.x2 = Math.max(0, Math.min(63, dragWidgetStartX2 + deltaX));
+                selectedWidget.y2 = Math.max(0, Math.min(63, dragWidgetStartY2 + deltaY));
+            } else {
+                selectedWidget.x = Math.max(0, Math.min(63, dragWidgetStartX + deltaX));
+                selectedWidget.y = Math.max(0, Math.min(63, dragWidgetStartY + deltaY));
+            }
+
+            renderCanvas();
+        });
+
+        canvas.addEventListener('mouseup', async (e) => {
+            if (isDragging && selectedWidget) {
+                const rect = canvas.getBoundingClientRect();
+                const x = Math.floor((e.clientX - rect.left) / SCALE);
+                const y = Math.floor((e.clientY - rect.top) / SCALE);
+
+                // Only save if position actually changed
+                if (x !== dragStartX || y !== dragStartY) {
+                    // Save the new position to server
+                    try {
+                        let updates = {};
+                        if (selectedWidget.type === 'line') {
+                            updates = {
+                                x1: selectedWidget.x1,
+                                y1: selectedWidget.y1,
+                                x2: selectedWidget.x2,
+                                y2: selectedWidget.y2
+                            };
+                        } else {
+                            updates = {
+                                x: selectedWidget.x,
+                                y: selectedWidget.y
+                            };
+                        }
+
+                        await fetch('/api/layout/widget/' + selectedWidget.id, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ updates })
+                        });
+
+                        log('Widget moved', 'success');
+                        updatePropertyPanel();
+                    } catch (e) {
+                        log('Failed to save position: ' + e, 'error');
+                    }
+                }
+            }
+
+            isDragging = false;
+            canvas.style.cursor = 'crosshair';
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            if (isDragging) {
+                isDragging = false;
+                canvas.style.cursor = 'crosshair';
+                // Reload to discard unsaved drag changes
+                loadEditorData();
+            }
         });
 
         function hitTest(widget, x, y) {
