@@ -497,6 +497,8 @@ def create_app(display_manager: Any) -> FastAPI:
         display_manager._data_manager.unregister(name)
         try:
             display_manager._data_manager.create_source(name, request.config)
+            # Refresh the new source to populate its cache
+            await display_manager._data_manager.refresh(name)
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 

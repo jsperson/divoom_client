@@ -1,7 +1,7 @@
 {
   "name": "Daily2",
   "background": "#000000",
-  "refresh_seconds": 300,
+  "refresh_seconds": 60,
   "widgets": [
     {
       "type": "clock",
