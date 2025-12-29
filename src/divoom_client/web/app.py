@@ -1169,6 +1169,7 @@ def get_index_html() -> str:
                     <button onclick="addWidget('rect')">+ Rectangle</button>
                     <button onclick="addWidget('line')">+ Line</button>
                     <button onclick="addWidget('clock')">+ Clock</button>
+                    <button onclick="addWidget('date')">+ Date</button>
                     <span style="border-left: 1px solid #444; margin: 0 8px;"></span>
                     <button id="undo-btn" onclick="undo()" disabled title="Undo (Ctrl+Z)">Undo</button>
                     <button id="redo-btn" onclick="redo()" disabled title="Redo (Ctrl+Y)">Redo</button>
@@ -1805,6 +1806,16 @@ def get_index_html() -> str:
                         clockX += charWidth + 1;
                     }
                     break;
+                case 'date':
+                    ctx.fillStyle = getWidgetColor(widget);
+                    const dateText = getDatePreviewText(widget);
+                    const dateFont = widget.font || '5x7';
+                    let dateX = widget.x;
+                    for (const char of dateText) {
+                        const charWidth = renderBitmapChar(char, dateX, widget.y, dateFont, getWidgetColor(widget));
+                        dateX += charWidth + 1;
+                    }
+                    break;
             }
         }
 
@@ -1841,6 +1852,46 @@ def get_index_html() -> str:
                 hours = hours % 12 || 12;
                 return widget.show_seconds ? `${hours}:${mins}:${secs}${ampm}` : `${hours}:${mins}${ampm}`;
             }
+        }
+
+        function getDatePreviewText(widget) {
+            // Generate preview date string based on widget settings
+            const now = new Date();
+            // Apply timezone offset (widget.timezone_offset is hours from UTC)
+            const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+            let offsetHours = widget.timezone_offset || 0;
+
+            // Simple US DST detection for preview
+            if (widget.auto_dst !== false) {
+                const year = now.getFullYear();
+                // Second Sunday in March
+                const dstStart = new Date(year, 2, 8 + (7 - new Date(year, 2, 1).getDay()) % 7);
+                // First Sunday in November
+                const dstEnd = new Date(year, 10, 1 + (7 - new Date(year, 10, 1).getDay()) % 7);
+                const testDate = new Date(utcMs + offsetHours * 3600000);
+                if (testDate >= dstStart && testDate < dstEnd) {
+                    offsetHours += 1;
+                }
+            }
+
+            const localTime = new Date(utcMs + offsetHours * 3600000);
+            const format = widget.format || '%m/%d';
+
+            // Simple strftime-style format replacement
+            const pad = (n) => n.toString().padStart(2, '0');
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+            return format
+                .replace('%Y', localTime.getUTCFullYear())
+                .replace('%y', localTime.getUTCFullYear().toString().slice(-2))
+                .replace('%m', pad(localTime.getUTCMonth() + 1))
+                .replace('%d', pad(localTime.getUTCDate()))
+                .replace('%b', months[localTime.getUTCMonth()])
+                .replace('%B', months[localTime.getUTCMonth()])  // Abbreviated for display
+                .replace('%a', days[localTime.getUTCDay()])
+                .replace('%A', days[localTime.getUTCDay()])  // Abbreviated for display
+                .replace('%j', Math.ceil((localTime - new Date(localTime.getUTCFullYear(), 0, 1)) / 86400000).toString().padStart(3, '0'));
         }
 
         function getWidgetColor(widget) {
@@ -1894,6 +1945,15 @@ def get_index_html() -> str:
                     w = clockPreview.length * (clockFontW + 1) * SCALE + 4;
                     h = clockFontH * SCALE + 4;
                     break;
+                case 'date':
+                    const datePreview = getDatePreviewText(widget);
+                    const dateFontW = widget.font === '4x6' ? 4 : 5;
+                    const dateFontH = widget.font === '4x6' ? 6 : 7;
+                    x = widget.x * SCALE - 2;
+                    y = widget.y * SCALE - 2;
+                    w = datePreview.length * (dateFontW + 1) * SCALE + 4;
+                    h = dateFontH * SCALE + 4;
+                    break;
                 default:
                     return;
             }
@@ -1912,6 +1972,8 @@ def get_index_html() -> str:
                     info = widget.text || widget.data_source || '';
                 } else if (widget.type === 'clock') {
                     info = `UTC${widget.timezone_offset >= 0 ? '+' : ''}${widget.timezone_offset || 0}`;
+                } else if (widget.type === 'date') {
+                    info = widget.format || '%m/%d';
                 }
                 html += `<div class="widget-item ${isSelected ? 'selected' : ''}" onclick="selectWidget('${widget.id}')">
                          <span><span class="widget-type">${widget.type}</span> ${widget.id || ''}</span>
@@ -1984,6 +2046,41 @@ def get_index_html() -> str:
                         </select></label>
                         <label class="checkbox">24-Hour Format <input type="checkbox" id="prop-format24h" ${selectedWidget.format_24h ? 'checked' : ''} onchange="setPendingChange('format_24h', this.checked)"></label>
                         <label class="checkbox">Show Seconds <input type="checkbox" id="prop-showsecs" ${selectedWidget.show_seconds ? 'checked' : ''} onchange="setPendingChange('show_seconds', this.checked)"></label>
+                        <label>UTC Offset: <select id="prop-tzoffset" onchange="setPendingChange('timezone_offset', parseFloat(this.value))">
+                            <option value="-12" ${selectedWidget.timezone_offset === -12 ? 'selected' : ''}>UTC-12</option>
+                            <option value="-11" ${selectedWidget.timezone_offset === -11 ? 'selected' : ''}>UTC-11</option>
+                            <option value="-10" ${selectedWidget.timezone_offset === -10 ? 'selected' : ''}>UTC-10 (Hawaii)</option>
+                            <option value="-9" ${selectedWidget.timezone_offset === -9 ? 'selected' : ''}>UTC-9 (Alaska)</option>
+                            <option value="-8" ${selectedWidget.timezone_offset === -8 ? 'selected' : ''}>UTC-8 (Pacific)</option>
+                            <option value="-7" ${selectedWidget.timezone_offset === -7 ? 'selected' : ''}>UTC-7 (Mountain)</option>
+                            <option value="-6" ${selectedWidget.timezone_offset === -6 ? 'selected' : ''}>UTC-6 (Central)</option>
+                            <option value="-5" ${selectedWidget.timezone_offset === -5 ? 'selected' : ''}>UTC-5 (Eastern)</option>
+                            <option value="-4" ${selectedWidget.timezone_offset === -4 ? 'selected' : ''}>UTC-4 (Atlantic)</option>
+                            <option value="-3" ${selectedWidget.timezone_offset === -3 ? 'selected' : ''}>UTC-3</option>
+                            <option value="0" ${selectedWidget.timezone_offset === 0 ? 'selected' : ''}>UTC (GMT)</option>
+                            <option value="1" ${selectedWidget.timezone_offset === 1 ? 'selected' : ''}>UTC+1 (CET)</option>
+                            <option value="2" ${selectedWidget.timezone_offset === 2 ? 'selected' : ''}>UTC+2 (EET)</option>
+                            <option value="3" ${selectedWidget.timezone_offset === 3 ? 'selected' : ''}>UTC+3 (Moscow)</option>
+                            <option value="5.5" ${selectedWidget.timezone_offset === 5.5 ? 'selected' : ''}>UTC+5:30 (India)</option>
+                            <option value="8" ${selectedWidget.timezone_offset === 8 ? 'selected' : ''}>UTC+8 (China)</option>
+                            <option value="9" ${selectedWidget.timezone_offset === 9 ? 'selected' : ''}>UTC+9 (Japan)</option>
+                            <option value="10" ${selectedWidget.timezone_offset === 10 ? 'selected' : ''}>UTC+10 (Sydney)</option>
+                            <option value="12" ${selectedWidget.timezone_offset === 12 ? 'selected' : ''}>UTC+12 (NZ)</option>
+                        </select></label>
+                        <label class="checkbox">Auto DST (US) <input type="checkbox" id="prop-autodst" ${selectedWidget.auto_dst !== false ? 'checked' : ''} onchange="setPendingChange('auto_dst', this.checked)"></label>
+                        <label>Color: <input type="color" id="prop-color" value="${getWidgetColor(selectedWidget)}" oninput="setPendingChange('color', this.value)"></label>
+                    `;
+                    break;
+                case 'date':
+                    html += `
+                        <label>X: <input type="number" id="prop-x" value="${selectedWidget.x || 0}" min="0" max="63" oninput="setPendingChange('x', parseInt(this.value))"></label>
+                        <label>Y: <input type="number" id="prop-y" value="${selectedWidget.y || 0}" min="0" max="63" oninput="setPendingChange('y', parseInt(this.value))"></label>
+                        <label>Font: <select id="prop-font" onchange="setPendingChange('font', this.value)">
+                            <option value="5x7" ${selectedWidget.font === '5x7' ? 'selected' : ''}>5x7</option>
+                            <option value="4x6" ${selectedWidget.font === '4x6' ? 'selected' : ''}>4x6</option>
+                        </select></label>
+                        <label>Format: <input type="text" id="prop-format" value="${selectedWidget.format || '%m/%d'}" placeholder="%m/%d" oninput="setPendingChange('format', this.value)"></label>
+                        <div style="font-size:11px;color:#888;margin:-5px 0 10px 0;">%Y=year %m=month %d=day %b=Mon %a=Tue</div>
                         <label>UTC Offset: <select id="prop-tzoffset" onchange="setPendingChange('timezone_offset', parseFloat(this.value))">
                             <option value="-12" ${selectedWidget.timezone_offset === -12 ? 'selected' : ''}>UTC-12</option>
                             <option value="-11" ${selectedWidget.timezone_offset === -11 ? 'selected' : ''}>UTC-11</option>
@@ -2164,6 +2261,15 @@ def get_index_html() -> str:
                     widget.font = '5x7';
                     widget.format_24h = false;
                     widget.show_seconds = false;
+                    widget.timezone_offset = -6;  // CST
+                    widget.auto_dst = true;
+                    widget.color = '#FFFFFF';
+                    break;
+                case 'date':
+                    widget.x = 2;
+                    widget.y = 2;
+                    widget.font = '5x7';
+                    widget.format = '%m/%d';
                     widget.timezone_offset = -6;  // CST
                     widget.auto_dst = true;
                     widget.color = '#FFFFFF';
@@ -2441,6 +2547,13 @@ def get_index_html() -> str:
                     const clockWidth = clockText.length * (clockFontW + 1);
                     return x >= widget.x && x <= widget.x + clockWidth &&
                            y >= widget.y && y <= widget.y + clockFontH;
+                case 'date':
+                    const dateText = getDatePreviewText(widget);
+                    const dateFontW = widget.font === '4x6' ? 4 : 5;
+                    const dateFontH = widget.font === '4x6' ? 6 : 7;
+                    const dateWidth = dateText.length * (dateFontW + 1);
+                    return x >= widget.x && x <= widget.x + dateWidth &&
+                           y >= widget.y && y <= widget.y + dateFontH;
                 default:
                     return false;
             }

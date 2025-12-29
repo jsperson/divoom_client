@@ -85,7 +85,21 @@ class ClockWidget(BaseModel):
     color: Union[str, ConditionalColor] = Field(default="#FFFFFF")
 
 
-Widget = Union[TextWidget, RectWidget, LineWidget, ImageWidget, ClockWidget]
+class DateWidget(BaseModel):
+    """Date widget configuration."""
+
+    type: Literal["date"] = "date"
+    id: Optional[str] = None
+    x: int = Field(ge=0, lt=64)
+    y: int = Field(ge=0, lt=64)
+    font: str = Field(default="5x7")
+    format: str = Field(default="%m/%d", description="strftime format string (e.g., %m/%d, %b %d)")
+    timezone_offset: float = Field(default=0, description="UTC offset in hours (e.g., -5 for EST)")
+    auto_dst: bool = Field(default=True, description="Automatically adjust for daylight saving time")
+    color: Union[str, ConditionalColor] = Field(default="#FFFFFF")
+
+
+Widget = Union[TextWidget, RectWidget, LineWidget, ImageWidget, ClockWidget, DateWidget]
 
 
 class Layout(BaseModel):

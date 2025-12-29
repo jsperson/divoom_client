@@ -13,6 +13,7 @@ from divoom_client.core.frame import Frame, parse_color
 from divoom_client.models.layout import (
     ClockWidget,
     ConditionalColor,
+    DateWidget,
     ImageWidget,
     Layout,
     LineWidget,
@@ -373,6 +374,65 @@ class Renderer:
                 frame.set_pixel(x_offset + px, widget.y + py, c)
             x_offset += font.width + font.spacing
 
+    def render_date_widget(
+        self,
+        widget: DateWidget,
+        frame: Frame,
+        evaluator: ExpressionEvaluator,
+    ) -> None:
+        """Render a date widget to the frame.
+
+        Args:
+            widget: Date widget configuration
+            frame: Target frame
+            evaluator: Expression evaluator
+        """
+        # Get current UTC time
+        now_utc = datetime.now(timezone.utc)
+
+        # Apply timezone offset
+        offset_hours = widget.timezone_offset
+
+        # Handle DST if auto_dst is enabled
+        if widget.auto_dst:
+            # Simple DST detection for US timezones
+            # DST runs from second Sunday in March to first Sunday in November
+            year = now_utc.year
+
+            # Find second Sunday in March
+            march_first = datetime(year, 3, 1, tzinfo=timezone.utc)
+            days_to_sunday = (6 - march_first.weekday()) % 7
+            dst_start = march_first + timedelta(days=days_to_sunday + 7)  # Second Sunday
+            dst_start = dst_start.replace(hour=2)  # 2 AM
+
+            # Find first Sunday in November
+            nov_first = datetime(year, 11, 1, tzinfo=timezone.utc)
+            days_to_sunday = (6 - nov_first.weekday()) % 7
+            dst_end = nov_first + timedelta(days=days_to_sunday)  # First Sunday
+            dst_end = dst_end.replace(hour=2)  # 2 AM
+
+            # Check if we're in DST period
+            if dst_start <= now_utc < dst_end:
+                offset_hours += 1  # Add 1 hour for DST
+
+        # Apply offset
+        local_time = now_utc + timedelta(hours=offset_hours)
+
+        # Format date string using strftime
+        date_str = local_time.strftime(widget.format)
+
+        # Get font and color
+        font = get_font(widget.font)
+        color = self.resolve_color(widget.color, evaluator)
+
+        # Render each character
+        x_offset = widget.x
+        for char in date_str:
+            pixels = font.render_char(char, color)
+            for px, py, c in pixels:
+                frame.set_pixel(x_offset + px, widget.y + py, c)
+            x_offset += font.width + font.spacing
+
     def render_widget(
         self,
         widget: Widget,
@@ -398,6 +458,8 @@ class Renderer:
             self.render_image_widget(widget, frame, data)
         elif isinstance(widget, ClockWidget):
             self.render_clock_widget(widget, frame, evaluator)
+        elif isinstance(widget, DateWidget):
+            self.render_date_widget(widget, frame, evaluator)
         else:
             logger.warning(f"Unknown widget type: {type(widget)}")
 
