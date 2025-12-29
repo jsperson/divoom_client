@@ -1,10 +1,13 @@
 """Device discovery for Pixoo devices."""
 
+import concurrent.futures
 import json
 import logging
 import socket
 from pathlib import Path
 from typing import Optional
+
+import requests
 
 from divoom_client.core.pixoo import Pixoo
 from divoom_client.models.config import DeviceConfig
@@ -14,6 +17,8 @@ logger = logging.getLogger(__name__)
 PIXOO_DISCOVERY_PORT = 8888
 DISCOVERY_TIMEOUT = 3.0
 DISCOVERY_MESSAGE = b"divoom"
+HTTP_SCAN_TIMEOUT = 0.5
+HTTP_SCAN_WORKERS = 50
 
 
 def load_device_config(config_path: Path) -> Optional[DeviceConfig]:
@@ -53,7 +58,75 @@ def save_device_config(config: DeviceConfig, config_path: Path) -> None:
     logger.info(f"Saved device config to {config_path}")
 
 
-def scan_network() -> list[str]:
+def _check_pixoo_http(ip: str) -> Optional[str]:
+    """Check if an IP has a Pixoo device via HTTP API.
+
+    Args:
+        ip: IP address to check
+
+    Returns:
+        IP address if Pixoo found, None otherwise
+    """
+    try:
+        r = requests.post(
+            f"http://{ip}:80/post",
+            json={"Command": "Channel/GetIndex"},
+            timeout=HTTP_SCAN_TIMEOUT,
+        )
+        if r.status_code == 200 and "error_code" in r.json():
+            return ip
+    except Exception:
+        pass
+    return None
+
+
+def _get_local_subnet() -> Optional[str]:
+    """Get the local subnet prefix (e.g., '192.168.1').
+
+    Returns:
+        Subnet prefix or None if unable to determine
+    """
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        return ".".join(local_ip.split(".")[:3])
+    except Exception:
+        return None
+
+
+def scan_network_http() -> list[str]:
+    """Scan the local subnet for Pixoo devices using HTTP.
+
+    This is slower but more reliable than UDP broadcast.
+
+    Returns:
+        List of discovered IP addresses
+    """
+    subnet = _get_local_subnet()
+    if not subnet:
+        logger.warning("Could not determine local subnet")
+        return []
+
+    logger.info(f"Scanning {subnet}.1-254 for Pixoo devices...")
+    discovered = []
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=HTTP_SCAN_WORKERS) as executor:
+        futures = {
+            executor.submit(_check_pixoo_http, f"{subnet}.{i}"): i
+            for i in range(1, 255)
+        }
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            if result:
+                logger.info(f"Discovered Pixoo device at {result}")
+                discovered.append(result)
+
+    return discovered
+
+
+def scan_network_udp() -> list[str]:
     """Scan the network for Pixoo devices using UDP broadcast.
 
     Returns:
@@ -79,11 +152,31 @@ def scan_network() -> list[str]:
                 break
 
     except OSError as e:
-        logger.warning(f"Network scan failed: {e}")
+        logger.warning(f"UDP broadcast failed: {e}")
     finally:
         sock.close()
 
     return discovered
+
+
+def scan_network() -> list[str]:
+    """Scan the network for Pixoo devices.
+
+    Tries UDP broadcast first (fast), then falls back to HTTP scan (reliable).
+
+    Returns:
+        List of discovered IP addresses
+    """
+    # Try fast UDP broadcast first
+    logger.debug("Trying UDP broadcast discovery...")
+    discovered = scan_network_udp()
+
+    if discovered:
+        return discovered
+
+    # Fall back to HTTP scan
+    logger.debug("UDP broadcast found nothing, trying HTTP scan...")
+    return scan_network_http()
 
 
 def discover_device(config_dir: Optional[Path] = None) -> Optional[str]:
