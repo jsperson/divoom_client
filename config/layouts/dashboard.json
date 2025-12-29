@@ -202,12 +202,37 @@
     },
     {
       "type": "text",
-      "x": 30,
-      "y": 55,
-      "font": "5x7",
-      "text": "NEW",
-      "color": "#FF0000",
-      "id": "text_e01673a4"
+      "id": "text_sp500_label",
+      "x": 2,
+      "y": 57,
+      "font": "4x6",
+      "data_source": null,
+      "text": "S&P",
+      "format": "{value}",
+      "color": "#666666"
+    },
+    {
+      "type": "text",
+      "id": "text_sp500_value",
+      "x": 20,
+      "y": 57,
+      "font": "4x6",
+      "data_source": "stocks.^GSPC.percent",
+      "text": null,
+      "format": "{value:+.1f}%",
+      "color": {
+        "conditions": [
+          {
+            "when": "stocks.^GSPC.change < 0",
+            "color": "#FF0000"
+          },
+          {
+            "when": "stocks.^GSPC.change >= 0",
+            "color": "#00FF00"
+          }
+        ],
+        "default": "#FFFFFF"
+      }
     }
   ]
 }
