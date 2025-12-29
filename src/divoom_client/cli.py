@@ -6,7 +6,11 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from dotenv import load_dotenv
 import typer
+
+# Load environment variables from .env file
+load_dotenv()
 
 from divoom_client import __version__
 from divoom_client.core.discovery import discover_device, get_device, scan_network
