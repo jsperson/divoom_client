@@ -70,7 +70,22 @@ class ImageWidget(BaseModel):
     height: Optional[int] = Field(default=None, description="Scale height (None = original)")
 
 
-Widget = Union[TextWidget, RectWidget, LineWidget, ImageWidget]
+class ClockWidget(BaseModel):
+    """Clock widget configuration."""
+
+    type: Literal["clock"] = "clock"
+    id: Optional[str] = None
+    x: int = Field(ge=0, lt=64)
+    y: int = Field(ge=0, lt=64)
+    font: str = Field(default="5x7")
+    format_24h: bool = Field(default=False, description="Use 24-hour format")
+    show_seconds: bool = Field(default=False, description="Show seconds")
+    timezone_offset: float = Field(default=0, description="UTC offset in hours (e.g., -5 for EST)")
+    auto_dst: bool = Field(default=True, description="Automatically adjust for daylight saving time")
+    color: Union[str, ConditionalColor] = Field(default="#FFFFFF")
+
+
+Widget = Union[TextWidget, RectWidget, LineWidget, ImageWidget, ClockWidget]
 
 
 class Layout(BaseModel):

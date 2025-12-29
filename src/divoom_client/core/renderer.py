@@ -2,6 +2,7 @@
 
 import logging
 import re
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Optional, Union
 
@@ -10,6 +11,7 @@ from PIL import Image
 from divoom_client.core.fonts import get_font
 from divoom_client.core.frame import Frame, parse_color
 from divoom_client.models.layout import (
+    ClockWidget,
     ConditionalColor,
     ImageWidget,
     Layout,
@@ -296,6 +298,79 @@ class Renderer:
         if img:
             frame.draw_image(widget.x, widget.y, img, widget.width, widget.height)
 
+    def render_clock_widget(
+        self,
+        widget: ClockWidget,
+        frame: Frame,
+        evaluator: ExpressionEvaluator,
+    ) -> None:
+        """Render a clock widget to the frame.
+
+        Args:
+            widget: Clock widget configuration
+            frame: Target frame
+            evaluator: Expression evaluator
+        """
+        # Get current UTC time
+        now_utc = datetime.now(timezone.utc)
+
+        # Apply timezone offset
+        offset_hours = widget.timezone_offset
+
+        # Handle DST if auto_dst is enabled
+        if widget.auto_dst:
+            # Simple DST detection for US timezones
+            # DST runs from second Sunday in March to first Sunday in November
+            year = now_utc.year
+
+            # Find second Sunday in March
+            march_first = datetime(year, 3, 1, tzinfo=timezone.utc)
+            days_to_sunday = (6 - march_first.weekday()) % 7
+            dst_start = march_first + timedelta(days=days_to_sunday + 7)  # Second Sunday
+            dst_start = dst_start.replace(hour=2)  # 2 AM
+
+            # Find first Sunday in November
+            nov_first = datetime(year, 11, 1, tzinfo=timezone.utc)
+            days_to_sunday = (6 - nov_first.weekday()) % 7
+            dst_end = nov_first + timedelta(days=days_to_sunday)  # First Sunday
+            dst_end = dst_end.replace(hour=2)  # 2 AM
+
+            # Check if we're in DST period
+            if dst_start <= now_utc < dst_end:
+                offset_hours += 1  # Add 1 hour for DST
+
+        # Apply offset
+        local_time = now_utc + timedelta(hours=offset_hours)
+
+        # Format time string
+        if widget.format_24h:
+            if widget.show_seconds:
+                time_str = local_time.strftime("%H:%M:%S")
+            else:
+                time_str = local_time.strftime("%H:%M")
+        else:
+            if widget.show_seconds:
+                time_str = local_time.strftime("%I:%M:%S")
+            else:
+                time_str = local_time.strftime("%I:%M")
+            # Remove leading zero from hour for 12-hour format
+            if time_str.startswith("0"):
+                time_str = time_str[1:]
+            # Add AM/PM
+            time_str += local_time.strftime("%p").lower()[:1]  # 'a' or 'p'
+
+        # Get font and color
+        font = get_font(widget.font)
+        color = self.resolve_color(widget.color, evaluator)
+
+        # Render each character
+        x_offset = widget.x
+        for char in time_str:
+            pixels = font.render_char(char, color)
+            for px, py, c in pixels:
+                frame.set_pixel(x_offset + px, widget.y + py, c)
+            x_offset += font.width + font.spacing
+
     def render_widget(
         self,
         widget: Widget,
@@ -319,6 +394,8 @@ class Renderer:
             self.render_line_widget(widget, frame, evaluator)
         elif isinstance(widget, ImageWidget):
             self.render_image_widget(widget, frame, data)
+        elif isinstance(widget, ClockWidget):
+            self.render_clock_widget(widget, frame, evaluator)
         else:
             logger.warning(f"Unknown widget type: {type(widget)}")
 

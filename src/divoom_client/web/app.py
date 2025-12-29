@@ -1156,6 +1156,7 @@ def get_index_html() -> str:
                     <button onclick="addWidget('text')">+ Text</button>
                     <button onclick="addWidget('rect')">+ Rectangle</button>
                     <button onclick="addWidget('line')">+ Line</button>
+                    <button onclick="addWidget('clock')">+ Clock</button>
                     <span style="border-left: 1px solid #444; margin: 0 8px;"></span>
                     <button id="undo-btn" onclick="undo()" disabled title="Undo (Ctrl+Z)">Undo</button>
                     <button id="redo-btn" onclick="redo()" disabled title="Redo (Ctrl+Y)">Redo</button>
@@ -1779,6 +1780,51 @@ def get_index_html() -> str:
                     ctx.lineWidth = SCALE;
                     ctx.stroke();
                     break;
+                case 'clock':
+                    ctx.fillStyle = getWidgetColor(widget);
+                    const clockText = getClockPreviewText(widget);
+                    const clockFont = widget.font || '5x7';
+                    let clockX = widget.x;
+                    for (const char of clockText) {
+                        const charWidth = renderBitmapChar(char, clockX, widget.y, clockFont, getWidgetColor(widget));
+                        clockX += charWidth + 1;
+                    }
+                    break;
+            }
+        }
+
+        function getClockPreviewText(widget) {
+            // Generate preview time string based on widget settings
+            const now = new Date();
+            // Apply timezone offset (widget.timezone_offset is hours from UTC)
+            const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+            let offsetHours = widget.timezone_offset || 0;
+
+            // Simple US DST detection for preview
+            if (widget.auto_dst !== false) {
+                const year = now.getFullYear();
+                // Second Sunday in March
+                const dstStart = new Date(year, 2, 8 + (7 - new Date(year, 2, 1).getDay()) % 7);
+                // First Sunday in November
+                const dstEnd = new Date(year, 10, 1 + (7 - new Date(year, 10, 1).getDay()) % 7);
+                const testDate = new Date(utcMs + offsetHours * 3600000);
+                if (testDate >= dstStart && testDate < dstEnd) {
+                    offsetHours += 1;
+                }
+            }
+
+            const localTime = new Date(utcMs + offsetHours * 3600000);
+            let hours = localTime.getUTCHours();
+            const mins = localTime.getUTCMinutes().toString().padStart(2, '0');
+            const secs = localTime.getUTCSeconds().toString().padStart(2, '0');
+
+            if (widget.format_24h) {
+                const hStr = hours.toString().padStart(2, '0');
+                return widget.show_seconds ? `${hStr}:${mins}:${secs}` : `${hStr}:${mins}`;
+            } else {
+                const ampm = hours >= 12 ? 'p' : 'a';
+                hours = hours % 12 || 12;
+                return widget.show_seconds ? `${hours}:${mins}:${secs}${ampm}` : `${hours}:${mins}${ampm}`;
             }
         }
 
@@ -1824,6 +1870,15 @@ def get_index_html() -> str:
                     if (w < SCALE) w = SCALE + 8;
                     if (h < SCALE) h = SCALE + 8;
                     break;
+                case 'clock':
+                    const clockPreview = getClockPreviewText(widget);
+                    const clockFontW = widget.font === '4x6' ? 4 : 5;
+                    const clockFontH = widget.font === '4x6' ? 6 : 7;
+                    x = widget.x * SCALE - 2;
+                    y = widget.y * SCALE - 2;
+                    w = clockPreview.length * (clockFontW + 1) * SCALE + 4;
+                    h = clockFontH * SCALE + 4;
+                    break;
                 default:
                     return;
             }
@@ -1837,7 +1892,12 @@ def get_index_html() -> str:
             let html = '';
             for (const widget of currentLayoutData.widgets || []) {
                 const isSelected = selectedWidget && selectedWidget.id === widget.id;
-                const info = widget.type === 'text' ? (widget.text || widget.data_source || '') : '';
+                let info = '';
+                if (widget.type === 'text') {
+                    info = widget.text || widget.data_source || '';
+                } else if (widget.type === 'clock') {
+                    info = `UTC${widget.timezone_offset >= 0 ? '+' : ''}${widget.timezone_offset || 0}`;
+                }
                 html += `<div class="widget-item ${isSelected ? 'selected' : ''}" onclick="selectWidget('${widget.id}')">
                          <span><span class="widget-type">${widget.type}</span> ${widget.id || ''}</span>
                          <span class="widget-info">${info.substring(0, 15)}</span>
@@ -1896,6 +1956,41 @@ def get_index_html() -> str:
                         <label>Y1: <input type="number" id="prop-y1" value="${selectedWidget.y1 || 0}" min="0" max="63" oninput="setPendingChange('y1', parseInt(this.value))"></label>
                         <label>X2: <input type="number" id="prop-x2" value="${selectedWidget.x2 || 63}" min="0" max="63" oninput="setPendingChange('x2', parseInt(this.value))"></label>
                         <label>Y2: <input type="number" id="prop-y2" value="${selectedWidget.y2 || 0}" min="0" max="63" oninput="setPendingChange('y2', parseInt(this.value))"></label>
+                        <label>Color: <input type="color" id="prop-color" value="${getWidgetColor(selectedWidget)}" oninput="setPendingChange('color', this.value)"></label>
+                    `;
+                    break;
+                case 'clock':
+                    html += `
+                        <label>X: <input type="number" id="prop-x" value="${selectedWidget.x || 0}" min="0" max="63" oninput="setPendingChange('x', parseInt(this.value))"></label>
+                        <label>Y: <input type="number" id="prop-y" value="${selectedWidget.y || 0}" min="0" max="63" oninput="setPendingChange('y', parseInt(this.value))"></label>
+                        <label>Font: <select id="prop-font" onchange="setPendingChange('font', this.value)">
+                            <option value="5x7" ${selectedWidget.font === '5x7' ? 'selected' : ''}>5x7</option>
+                            <option value="4x6" ${selectedWidget.font === '4x6' ? 'selected' : ''}>4x6</option>
+                        </select></label>
+                        <label><input type="checkbox" id="prop-format24h" ${selectedWidget.format_24h ? 'checked' : ''} onchange="setPendingChange('format_24h', this.checked)"> 24-Hour Format</label>
+                        <label><input type="checkbox" id="prop-showsecs" ${selectedWidget.show_seconds ? 'checked' : ''} onchange="setPendingChange('show_seconds', this.checked)"> Show Seconds</label>
+                        <label>UTC Offset: <select id="prop-tzoffset" onchange="setPendingChange('timezone_offset', parseFloat(this.value))">
+                            <option value="-12" ${selectedWidget.timezone_offset === -12 ? 'selected' : ''}>UTC-12</option>
+                            <option value="-11" ${selectedWidget.timezone_offset === -11 ? 'selected' : ''}>UTC-11</option>
+                            <option value="-10" ${selectedWidget.timezone_offset === -10 ? 'selected' : ''}>UTC-10 (Hawaii)</option>
+                            <option value="-9" ${selectedWidget.timezone_offset === -9 ? 'selected' : ''}>UTC-9 (Alaska)</option>
+                            <option value="-8" ${selectedWidget.timezone_offset === -8 ? 'selected' : ''}>UTC-8 (Pacific)</option>
+                            <option value="-7" ${selectedWidget.timezone_offset === -7 ? 'selected' : ''}>UTC-7 (Mountain)</option>
+                            <option value="-6" ${selectedWidget.timezone_offset === -6 ? 'selected' : ''}>UTC-6 (Central)</option>
+                            <option value="-5" ${selectedWidget.timezone_offset === -5 ? 'selected' : ''}>UTC-5 (Eastern)</option>
+                            <option value="-4" ${selectedWidget.timezone_offset === -4 ? 'selected' : ''}>UTC-4 (Atlantic)</option>
+                            <option value="-3" ${selectedWidget.timezone_offset === -3 ? 'selected' : ''}>UTC-3</option>
+                            <option value="0" ${selectedWidget.timezone_offset === 0 ? 'selected' : ''}>UTC (GMT)</option>
+                            <option value="1" ${selectedWidget.timezone_offset === 1 ? 'selected' : ''}>UTC+1 (CET)</option>
+                            <option value="2" ${selectedWidget.timezone_offset === 2 ? 'selected' : ''}>UTC+2 (EET)</option>
+                            <option value="3" ${selectedWidget.timezone_offset === 3 ? 'selected' : ''}>UTC+3 (Moscow)</option>
+                            <option value="5.5" ${selectedWidget.timezone_offset === 5.5 ? 'selected' : ''}>UTC+5:30 (India)</option>
+                            <option value="8" ${selectedWidget.timezone_offset === 8 ? 'selected' : ''}>UTC+8 (China)</option>
+                            <option value="9" ${selectedWidget.timezone_offset === 9 ? 'selected' : ''}>UTC+9 (Japan)</option>
+                            <option value="10" ${selectedWidget.timezone_offset === 10 ? 'selected' : ''}>UTC+10 (Sydney)</option>
+                            <option value="12" ${selectedWidget.timezone_offset === 12 ? 'selected' : ''}>UTC+12 (NZ)</option>
+                        </select></label>
+                        <label><input type="checkbox" id="prop-autodst" ${selectedWidget.auto_dst !== false ? 'checked' : ''} onchange="setPendingChange('auto_dst', this.checked)"> Auto DST (US)</label>
                         <label>Color: <input type="color" id="prop-color" value="${getWidgetColor(selectedWidget)}" oninput="setPendingChange('color', this.value)"></label>
                     `;
                     break;
@@ -2003,6 +2098,16 @@ def get_index_html() -> str:
                     widget.y1 = 32;
                     widget.x2 = 63;
                     widget.y2 = 32;
+                    widget.color = '#FFFFFF';
+                    break;
+                case 'clock':
+                    widget.x = 2;
+                    widget.y = 2;
+                    widget.font = '5x7';
+                    widget.format_24h = false;
+                    widget.show_seconds = false;
+                    widget.timezone_offset = -6;  // CST
+                    widget.auto_dst = true;
                     widget.color = '#FFFFFF';
                     break;
             }
@@ -2271,6 +2376,13 @@ def get_index_html() -> str:
                     const maxY = Math.max(y1, y2) + 3;
                     // Ensure minimum hit area for horizontal/vertical lines
                     return x >= minX && x <= maxX && y >= minY && y <= maxY;
+                case 'clock':
+                    const clockText = getClockPreviewText(widget);
+                    const clockFontW = widget.font === '4x6' ? 4 : 5;
+                    const clockFontH = widget.font === '4x6' ? 6 : 7;
+                    const clockWidth = clockText.length * (clockFontW + 1);
+                    return x >= widget.x && x <= widget.x + clockWidth &&
+                           y >= widget.y && y <= widget.y + clockFontH;
                 default:
                     return false;
             }

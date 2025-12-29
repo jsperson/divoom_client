@@ -1,0 +1,60 @@
+{
+  "name": "Daily",
+  "background": "#000000",
+  "refresh_seconds": 300,
+  "widgets": [
+    {
+      "type": "text",
+      "id": "text_8290bff0",
+      "x": 0,
+      "y": 9,
+      "font": "5x7",
+      "data_source": "weather.wind_speed",
+      "text": "",
+      "format": "{value}MPH",
+      "color": "#FFFFFF"
+    },
+    {
+      "type": "text",
+      "id": "text_174ef2e1",
+      "x": 44,
+      "y": 9,
+      "font": "5x7",
+      "data_source": "weather.wind_deg",
+      "text": "",
+      "format": "{value}",
+      "color": "#FFFFFF"
+    },
+    {
+      "type": "text",
+      "id": "text_aeffadab",
+      "x": 0,
+      "y": 0,
+      "font": "5x7",
+      "data_source": "weather.temp",
+      "text": "",
+      "format": "{value}\u00b0F",
+      "color": "#FFFFFF"
+    },
+    {
+      "type": "text",
+      "id": "text_6150de92",
+      "x": 2,
+      "y": 40,
+      "font": "5x7",
+      "data_source": null,
+      "text": "Text",
+      "format": "{value}",
+      "color": "#FFFFFF"
+    },
+    {
+      "type": "line",
+      "id": "line_fe46f870",
+      "x1": 0,
+      "y1": 18,
+      "x2": 63,
+      "y2": 18,
+      "color": "#FFFFFF"
+    }
+  ]
+}
