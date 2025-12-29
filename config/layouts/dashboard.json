@@ -70,32 +70,32 @@
     },
     {
       "type": "text",
-      "id": "text_gold_label",
+      "id": "text_9a649b95",
       "x": 2,
       "y": 22,
       "font": "4x6",
       "data_source": null,
-      "text": "GOLD",
+      "text": "GOOGL",
       "format": "{value}",
-      "color": "#FFD700"
+      "color": "#666666"
     },
     {
       "type": "text",
-      "id": "text_gold_value",
+      "id": "text_0dc76b45",
       "x": 28,
       "y": 22,
       "font": "4x6",
-      "data_source": "stocks.GC=F.price",
+      "data_source": "stocks.GOOGL.price",
       "text": null,
       "format": "${value:.0f}",
       "color": {
         "conditions": [
           {
-            "when": "stocks.GC=F.change < 0",
+            "when": "stocks.GOOGL.change < 0",
             "color": "#FF0000"
           },
           {
-            "when": "stocks.GC=F.change >= 0",
+            "when": "stocks.GOOGL.change >= 0",
             "color": "#00FF00"
           }
         ],
@@ -104,32 +104,32 @@
     },
     {
       "type": "text",
-      "id": "text_silver_label",
+      "id": "text_47057e56",
       "x": 2,
       "y": 30,
       "font": "4x6",
       "data_source": null,
-      "text": "SLVR",
+      "text": "MSFT",
       "format": "{value}",
-      "color": "#C0C0C0"
+      "color": "#666666"
     },
     {
       "type": "text",
-      "id": "text_silver_value",
+      "id": "text_29027c8a",
       "x": 28,
       "y": 30,
       "font": "4x6",
-      "data_source": "stocks.SI=F.price",
+      "data_source": "stocks.MSFT.price",
       "text": null,
-      "format": "${value:.1f}",
+      "format": "${value:.0f}",
       "color": {
         "conditions": [
           {
-            "when": "stocks.SI=F.change < 0",
+            "when": "stocks.MSFT.change < 0",
             "color": "#FF0000"
           },
           {
-            "when": "stocks.SI=F.change >= 0",
+            "when": "stocks.MSFT.change >= 0",
             "color": "#00FF00"
           }
         ],
