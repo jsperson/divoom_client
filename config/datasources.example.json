@@ -3,9 +3,10 @@
     "stocks": {
       "type": "stocks",
       "symbols": [
-        "AAPL",
-        "GOOGL",
-        "MSFT"
+        "^GSPC",
+        "^IXIC",
+        "GC=F",
+        "SI=F"
       ],
       "refresh_seconds": 300,
       "enabled": true
@@ -13,8 +14,8 @@
     "weather": {
       "type": "weather",
       "enabled": true,
-      "api_key": "fba54e0a9a051fe805d08f1c1f85d405",
-      "location": "Hesston,KS,US",
+      "api_key": "${OPENWEATHER_API_KEY}",
+      "location": "YourCity,US",
       "units": "imperial",
       "refresh_seconds": 600
     }
