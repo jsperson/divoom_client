@@ -1,0 +1,16 @@
+[Unit]
+Description=Divoom Pixoo Display Manager
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=%h/divoom_client
+EnvironmentFile=-%h/divoom_client/.env
+ExecStart=%h/divoom_client/.venv/bin/python -m divoom_client.cli serve config/layouts/Daily2.json --web --port 8080
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

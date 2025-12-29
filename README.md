@@ -19,7 +19,27 @@ A display manager for Divoom Pixoo 64 LED displays with a web-based layout edito
 - Python 3.10 or higher
 - A Divoom Pixoo 64 device on your local network
 
-### Using uv (recommended)
+### Quick Install (Raspberry Pi / Linux)
+
+Run these commands to install and start as a system service:
+
+```bash
+cd ~
+git clone https://github.com/jsperson/divoom_client.git
+cd divoom_client
+python3 -m venv .venv && source .venv/bin/activate && pip install -e .
+sudo cp divoom@.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now divoom@$USER
+```
+
+Then open `http://<your-pi-ip>:8080` in your browser to access the web UI.
+
+To configure weather data, go to the **Data Sources** tab and enter your OpenWeatherMap API key.
+
+### Manual Install
+
+#### Using uv (recommended)
 
 ```bash
 git clone https://github.com/jsperson/divoom_client.git
@@ -29,7 +49,7 @@ source .venv/bin/activate
 uv pip install -e .
 ```
 
-### Using pip
+#### Using pip
 
 ```bash
 git clone https://github.com/jsperson/divoom_client.git
@@ -47,26 +67,19 @@ pip install -e .
 divoom discover
 ```
 
-This will scan your network and display the IP address of any Pixoo devices found.
+This will scan your network and save the IP address of any Pixoo devices found to `config/device.json`.
 
-### 2. Configure your device
-
-Create or edit `config/device.json`:
-
-```json
-{
-  "ip_address": "192.168.1.100",
-  "brightness": 100
-}
-```
-
-### 3. Start the web server
+### 2. Start the web server
 
 ```bash
-divoom serve config/layouts/dashboard.json --web
+divoom serve config/layouts/Daily2.json --web
 ```
 
 Then open http://localhost:8080 in your browser.
+
+### 3. Configure data sources
+
+Go to the **Data Sources** tab in the web UI to configure stock symbols and enter your OpenWeatherMap API key for weather data.
 
 ## Web Interface
 
