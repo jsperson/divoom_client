@@ -797,6 +797,18 @@ def get_index_html() -> str:
             font-size: 13px;
         }
         label span { color: #ccc; }
+        label.checkbox {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+        label.checkbox input[type="checkbox"] {
+            margin: 0;
+            width: 18px;
+            height: 18px;
+            accent-color: #7b2cbf;
+        }
 
         /* Dashboard Grid */
         .dashboard-grid {
@@ -1947,7 +1959,7 @@ def get_index_html() -> str:
                         <label>Width: <input type="number" id="prop-width" value="${selectedWidget.width || 10}" min="1" max="64" oninput="setPendingChange('width', parseInt(this.value))"></label>
                         <label>Height: <input type="number" id="prop-height" value="${selectedWidget.height || 10}" min="1" max="64" oninput="setPendingChange('height', parseInt(this.value))"></label>
                         <label>Color: <input type="color" id="prop-color" value="${getWidgetColor(selectedWidget)}" oninput="setPendingChange('color', this.value)"></label>
-                        <label><input type="checkbox" id="prop-filled" ${selectedWidget.filled !== false ? 'checked' : ''} onchange="setPendingChange('filled', this.checked)"> Filled</label>
+                        <label class="checkbox">Filled <input type="checkbox" id="prop-filled" ${selectedWidget.filled !== false ? 'checked' : ''} onchange="setPendingChange('filled', this.checked)"></label>
                     `;
                     break;
                 case 'line':
@@ -1967,8 +1979,8 @@ def get_index_html() -> str:
                             <option value="5x7" ${selectedWidget.font === '5x7' ? 'selected' : ''}>5x7</option>
                             <option value="4x6" ${selectedWidget.font === '4x6' ? 'selected' : ''}>4x6</option>
                         </select></label>
-                        <label><input type="checkbox" id="prop-format24h" ${selectedWidget.format_24h ? 'checked' : ''} onchange="setPendingChange('format_24h', this.checked)"> 24-Hour Format</label>
-                        <label><input type="checkbox" id="prop-showsecs" ${selectedWidget.show_seconds ? 'checked' : ''} onchange="setPendingChange('show_seconds', this.checked)"> Show Seconds</label>
+                        <label class="checkbox">24-Hour Format <input type="checkbox" id="prop-format24h" ${selectedWidget.format_24h ? 'checked' : ''} onchange="setPendingChange('format_24h', this.checked)"></label>
+                        <label class="checkbox">Show Seconds <input type="checkbox" id="prop-showsecs" ${selectedWidget.show_seconds ? 'checked' : ''} onchange="setPendingChange('show_seconds', this.checked)"></label>
                         <label>UTC Offset: <select id="prop-tzoffset" onchange="setPendingChange('timezone_offset', parseFloat(this.value))">
                             <option value="-12" ${selectedWidget.timezone_offset === -12 ? 'selected' : ''}>UTC-12</option>
                             <option value="-11" ${selectedWidget.timezone_offset === -11 ? 'selected' : ''}>UTC-11</option>
@@ -1990,7 +2002,7 @@ def get_index_html() -> str:
                             <option value="10" ${selectedWidget.timezone_offset === 10 ? 'selected' : ''}>UTC+10 (Sydney)</option>
                             <option value="12" ${selectedWidget.timezone_offset === 12 ? 'selected' : ''}>UTC+12 (NZ)</option>
                         </select></label>
-                        <label><input type="checkbox" id="prop-autodst" ${selectedWidget.auto_dst !== false ? 'checked' : ''} onchange="setPendingChange('auto_dst', this.checked)"> Auto DST (US)</label>
+                        <label class="checkbox">Auto DST (US) <input type="checkbox" id="prop-autodst" ${selectedWidget.auto_dst !== false ? 'checked' : ''} onchange="setPendingChange('auto_dst', this.checked)"></label>
                         <label>Color: <input type="color" id="prop-color" value="${getWidgetColor(selectedWidget)}" oninput="setPendingChange('color', this.value)"></label>
                     `;
                     break;
