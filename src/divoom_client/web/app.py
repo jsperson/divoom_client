@@ -1669,6 +1669,9 @@ def get_index_html() -> str:
             } else if (e.ctrlKey && (e.key === 'y' || (e.key === 'Z' && e.shiftKey))) {
                 e.preventDefault();
                 redo();
+            } else if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && selectedWidget) {
+                e.preventDefault();
+                moveWidgetByArrow(e.key);
             }
         });
 
@@ -2031,6 +2034,49 @@ def get_index_html() -> str:
                 applyBtn.disabled = false;
                 applyBtn.textContent = 'Apply *';
                 applyBtn.classList.add('pending');
+            }
+        }
+
+        async function moveWidgetByArrow(key) {
+            if (!selectedWidget || !selectedWidget.id) return;
+
+            // Save to history before moving
+            saveToHistory();
+
+            let dx = 0, dy = 0;
+            switch (key) {
+                case 'ArrowUp': dy = -1; break;
+                case 'ArrowDown': dy = 1; break;
+                case 'ArrowLeft': dx = -1; break;
+                case 'ArrowRight': dx = 1; break;
+            }
+
+            // Update position based on widget type
+            let updates = {};
+            if (selectedWidget.type === 'line') {
+                selectedWidget.x1 = Math.max(0, Math.min(63, (selectedWidget.x1 || 0) + dx));
+                selectedWidget.y1 = Math.max(0, Math.min(63, (selectedWidget.y1 || 0) + dy));
+                selectedWidget.x2 = Math.max(0, Math.min(63, (selectedWidget.x2 || 0) + dx));
+                selectedWidget.y2 = Math.max(0, Math.min(63, (selectedWidget.y2 || 0) + dy));
+                updates = { x1: selectedWidget.x1, y1: selectedWidget.y1, x2: selectedWidget.x2, y2: selectedWidget.y2 };
+            } else {
+                selectedWidget.x = Math.max(0, Math.min(63, (selectedWidget.x || 0) + dx));
+                selectedWidget.y = Math.max(0, Math.min(63, (selectedWidget.y || 0) + dy));
+                updates = { x: selectedWidget.x, y: selectedWidget.y };
+            }
+
+            renderCanvas();
+            updatePropertyPanel();
+
+            // Save to server
+            try {
+                await fetch('/api/layout/widget/' + selectedWidget.id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ updates })
+                });
+            } catch (e) {
+                log('Failed to save position: ' + e, 'error');
             }
         }
 
