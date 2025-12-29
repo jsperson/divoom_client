@@ -112,12 +112,21 @@ def create_app(display_manager: Any) -> FastAPI:
 
     # --- Layout APIs ---
 
+    def ensure_widget_ids(layout_data: dict) -> dict:
+        """Ensure all widgets have unique IDs."""
+        for widget in layout_data.get("widgets", []):
+            if not widget.get("id"):
+                widget["id"] = f"{widget.get('type', 'widget')}_{uuid.uuid4().hex[:8]}"
+        return layout_data
+
     @app.get("/api/layout")
     async def get_layout() -> dict[str, Any]:
         """Get current layout configuration."""
         if not display_manager.layout:
             raise HTTPException(status_code=404, detail="No layout loaded")
-        return display_manager.layout.model_dump()
+        layout_data = display_manager.layout.model_dump()
+        ensure_widget_ids(layout_data)
+        return layout_data
 
     @app.get("/api/layouts")
     async def list_layouts() -> list[str]:
@@ -197,8 +206,9 @@ def create_app(display_manager: Any) -> FastAPI:
         if "id" not in widget or not widget["id"]:
             widget["id"] = f"{widget.get('type', 'widget')}_{uuid.uuid4().hex[:8]}"
 
-        # Add to layout
+        # Add to layout and ensure all widgets have IDs
         layout_data = display_manager.layout.model_dump()
+        ensure_widget_ids(layout_data)
         layout_data["widgets"].append(widget)
 
         # Save and reload
@@ -217,6 +227,7 @@ def create_app(display_manager: Any) -> FastAPI:
             raise HTTPException(status_code=400, detail="No layout loaded")
 
         layout_data = display_manager.layout.model_dump()
+        ensure_widget_ids(layout_data)
         widget_found = False
 
         for widget in layout_data["widgets"]:
@@ -244,6 +255,7 @@ def create_app(display_manager: Any) -> FastAPI:
             raise HTTPException(status_code=400, detail="No layout loaded")
 
         layout_data = display_manager.layout.model_dump()
+        ensure_widget_ids(layout_data)
         original_len = len(layout_data["widgets"])
         layout_data["widgets"] = [w for w in layout_data["widgets"] if w.get("id") != widget_id]
 
