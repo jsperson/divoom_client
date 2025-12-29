@@ -68,8 +68,9 @@ class ExpressionEvaluator:
             Boolean result
         """
         # Pattern: variable operator value
-        # Allow special chars like ^ in stock symbols (e.g., ^GSPC)
-        pattern = r"^\s*([\w.^]+)\s*([<>=!]+)\s*(.+)\s*$"
+        # Allow special chars like ^ and = in stock symbols (e.g., ^GSPC, GC=F)
+        # Use specific operators to avoid confusion with = in symbol names
+        pattern = r"^\s*([\w.^=]+)\s*(==|!=|<=|>=|<|>)\s*(.+)\s*$"
         match = re.match(pattern, expression)
         if not match:
             logger.warning(f"Invalid expression: {expression}")
