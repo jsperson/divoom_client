@@ -1,0 +1,23 @@
+{
+  "sources": {
+    "stocks": {
+      "type": "stocks",
+      "symbols": [
+        "^GSPC",
+        "^IXIC",
+        "GC=F",
+        "SI=F"
+      ],
+      "refresh_seconds": 300,
+      "enabled": true
+    },
+    "weather": {
+      "type": "weather",
+      "enabled": true,
+      "api_key": "${OPENWEATHER_API_KEY}",
+      "location": "YourCity,US",
+      "units": "imperial",
+      "refresh_seconds": 600
+    }
+  }
+}

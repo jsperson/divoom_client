@@ -54,6 +54,5 @@ Thumbs.db
 *.jpg
 *.gif
 
-# Config files with secrets/local settings
-config/datasources.json
+# Config files with local settings
 config/device.json
