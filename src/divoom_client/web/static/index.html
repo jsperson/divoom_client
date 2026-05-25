@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Divoom Studio</title>
+  <style>
+    :root {
+      --bg:#070914; --panel:#0d1222; --panel-2:#121a2f; --panel-3:#17213a;
+      --text:#f8fafc; --muted:#94a3b8; --line:#26324a;
+      --cyan:#22d3ee; --blue:#60a5fa; --green:#4ade80; --yellow:#fbbf24; --red:#fb7185; --purple:#a78bfa;
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin:0; min-height:100vh; color:var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 20% 0%, rgba(34,211,238,.14), transparent 32%),
+        radial-gradient(circle at 85% 15%, rgba(167,139,250,.12), transparent 28%),
+        linear-gradient(135deg, #050712, #07111f 55%, #050712);
+    }
+    button, input, select, textarea { font: inherit; }
+    button {
+      border:1px solid transparent; background:var(--cyan); color:#001018; border-radius:10px;
+      padding:9px 13px; font-weight:800; cursor:pointer; transition:.15s ease;
+    }
+    button:hover { transform: translateY(-1px); filter:brightness(1.05); }
+    button:disabled { cursor:not-allowed; opacity:.45; transform:none; filter:none; }
+    button.secondary { background:#17213a; color:#dbeafe; border-color:#334155; }
+    button.ghost { background:transparent; color:#cbd5e1; border-color:#334155; }
+    button.danger { background:var(--red); color:white; }
+    button.success { background:var(--green); color:#052e16; }
+    input, select, textarea {
+      width:100%; background:#080d1a; color:var(--text); border:1px solid #2b3754;
+      border-radius:10px; padding:9px 10px; outline:none;
+    }
+    input:focus, select:focus, textarea:focus { border-color:var(--cyan); box-shadow:0 0 0 3px rgba(34,211,238,.12); }
+    input[type=color] { height:39px; padding:3px; }
+    input[type=file] { padding:7px; }
+    .app { display:grid; grid-template-columns: 292px minmax(0, 1fr) 330px; grid-template-rows: 72px 1fr; min-height:100vh; }
+    header {
+      grid-column:1/4; display:flex; align-items:center; justify-content:space-between; gap:16px;
+      padding:14px 20px; border-bottom:1px solid rgba(148,163,184,.18); backdrop-filter: blur(14px);
+      background:rgba(5,9,18,.76); position:sticky; top:0; z-index:20;
+    }
+    .brand { display:flex; align-items:center; gap:13px; }
+    .logo {
+      width:43px; height:43px; border-radius:14px; display:grid; place-items:center; color:var(--cyan);
+      background:linear-gradient(135deg, rgba(34,211,238,.16), rgba(167,139,250,.12)); border:1px solid rgba(34,211,238,.35);
+      font-size:24px; box-shadow:0 0 28px rgba(34,211,238,.14);
+    }
+    h1 { margin:0; font-size:20px; letter-spacing:-.02em; }
+    .subtitle { color:var(--muted); font-size:12px; margin-top:2px; }
+    .top-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .status-pill { display:flex; align-items:center; gap:8px; border:1px solid #334155; background:#0b1220; border-radius:999px; padding:9px 12px; font-size:13px; color:#cbd5e1; }
+    .dot { width:10px; height:10px; border-radius:99px; background:var(--red); box-shadow:0 0 16px rgba(251,113,133,.5); }
+    .dot.ok { background:var(--green); box-shadow:0 0 16px rgba(74,222,128,.5); }
+
+    aside, main { min-height:0; min-width:0; }
+    .left, .right { padding:16px; overflow:auto; border-right:1px solid rgba(148,163,184,.14); }
+    .right { border-right:0; border-left:1px solid rgba(148,163,184,.14); }
+    main { padding:16px; overflow:auto; }
+    .card {
+      background:rgba(13,18,34,.88); border:1px solid rgba(148,163,184,.16); border-radius:18px; padding:14px; margin-bottom:14px; box-shadow:var(--shadow);
+    }
+    .card h2 { margin:0 0 12px; font-size:14px; letter-spacing:.02em; color:#e2e8f0; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .hint { color:var(--muted); font-size:12px; line-height:1.45; }
+    .muted { color:var(--muted); }
+    .small { font-size:12px; }
+    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+    .row { display:flex; align-items:center; gap:8px; }
+    .between { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    .stack { display:flex; flex-direction:column; gap:9px; }
+    .tabs { display:flex; gap:8px; background:#0a1020; border:1px solid #26324a; border-radius:14px; padding:5px; }
+    .tab { background:transparent; color:var(--muted); border:0; padding:8px 10px; border-radius:10px; }
+    .tab.active { color:#001018; background:var(--cyan); }
+    .section { display:none; }
+    .section.active { display:block; }
+
+    .layout-item, .widget-item, .event-item, .data-card {
+      border:1px solid #26324a; border-radius:14px; padding:10px; background:#0a1020; margin-bottom:8px;
+    }
+    .layout-item { cursor:pointer; }
+    .layout-item:hover, .widget-item:hover { border-color:#3b82f6; background:#0c1730; }
+    .layout-item.active { border-color:var(--cyan); box-shadow:0 0 0 1px rgba(34,211,238,.35) inset; }
+    .badge { display:inline-flex; align-items:center; border-radius:999px; padding:3px 8px; font-size:11px; font-weight:800; border:1px solid #334155; color:#cbd5e1; }
+    .badge.ok { color:#052e16; background:var(--green); border-color:transparent; }
+    .badge.warn { color:#422006; background:var(--yellow); border-color:transparent; }
+    .badge.err { color:white; background:var(--red); border-color:transparent; }
+
+    .workspace { display:grid; grid-template-columns:minmax(0, 1fr) minmax(280px, 340px); gap:16px; align-items:start; }
+    .stage-card { min-height:640px; }
+    .stage-header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+    .mode-switch { display:flex; gap:6px; background:#080d1a; border:1px solid #26324a; border-radius:12px; padding:4px; }
+    .mode-switch button { background:transparent; color:var(--muted); border:0; padding:7px 10px; border-radius:9px; }
+    .mode-switch button.active { background:var(--panel-3); color:var(--text); }
+    .canvas-shell {
+      display:grid; place-items:center; padding:20px; border-radius:18px; border:1px solid #24314d;
+      background:radial-gradient(circle at 50% 45%, rgba(34,211,238,.10), transparent 35%), #050914;
+      min-height:575px;
+    }
+    .device-frame {
+      padding:22px; background:linear-gradient(145deg,#111827,#020617); border-radius:34px;
+      border:1px solid #334155; box-shadow: inset 0 0 0 4px rgba(255,255,255,.025), 0 26px 80px rgba(0,0,0,.5);
+    }
+    .screen-wrap { position:relative; width:min(512px, 100%); aspect-ratio:1; background:#000; border-radius:12px; overflow:hidden; border:1px solid #334155; }
+    #editorCanvas, #serverPreview { width:100%; height:100%; image-rendering:pixelated; display:block; background:#000; }
+    #serverPreview { display:none; }
+    .grid-overlay { position:absolute; inset:0; pointer-events:none; background-image:linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px); background-size:8px 8px; opacity:.75; }
+    .grid-overlay.hidden { display:none; }
+    .toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+    .tool-btn { background:#0a1020; color:#dbeafe; border-color:#26324a; }
+    .tool-btn.primary { background:var(--cyan); color:#001018; }
+    .metric { padding:10px; background:#080d1a; border:1px solid #26324a; border-radius:14px; }
+    .metric .label { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
+    .metric .value { font-size:18px; font-weight:900; margin-top:4px; }
+    label { color:#cbd5e1; font-size:12px; font-weight:700; display:block; margin-bottom:9px; }
+    label span { display:block; margin-bottom:5px; color:var(--muted); font-weight:700; }
+    .properties { max-height:calc(100vh - 180px); overflow:auto; }
+    .table { width:100%; border-collapse:collapse; font-size:12px; }
+    .table th,.table td { padding:7px 6px; border-bottom:1px solid #26324a; text-align:left; }
+    .table th { color:var(--muted); font-size:11px; text-transform:uppercase; }
+    pre { white-space:pre-wrap; word-break:break-word; background:#070b15; border:1px solid #26324a; border-radius:12px; padding:10px; color:#cbd5e1; max-height:240px; overflow:auto; }
+    dialog { background:#0d1222; color:var(--text); border:1px solid #334155; border-radius:18px; padding:0; box-shadow:var(--shadow); width:min(460px, calc(100vw - 32px)); }
+    dialog::backdrop { background:rgba(0,0,0,.6); backdrop-filter: blur(4px); }
+    .dialog-body { padding:18px; }
+    .dialog-footer { display:flex; justify-content:flex-end; gap:8px; padding:14px 18px; border-top:1px solid #26324a; }
+    @media (max-width: 1500px) {
+      .app { grid-template-columns: 280px minmax(0, 1fr); }
+      header { grid-column:1/3; }
+      .right { grid-column:1/3; border-left:0; border-top:1px solid rgba(148,163,184,.14); }
+    }
+    @media (max-width: 1120px) {
+      .app { grid-template-columns: 1fr; grid-template-rows:auto; }
+      header, .right { grid-column:1; }
+      .left { border-right:0; border-bottom:1px solid rgba(148,163,184,.14); }
+      .workspace { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand"><div class="logo">▦</div><div><h1>Divoom Studio</h1><div class="subtitle">Design, preview, save, load, and publish Pixoo 64 layouts</div></div></div>
+      <div class="top-actions">
+        <div class="status-pill"><span id="statusDot" class="dot"></span><span id="statusText">Checking device…</span></div>
+        <button class="secondary" onclick="refreshAll()">Refresh</button>
+        <button id="sendBtn" class="success" onclick="sendToDevice()">Send to device</button>
+      </div>
+    </header>
+
+    <aside class="left">
+      <div class="card">
+        <h2>Layouts <button class="ghost" onclick="newLayout()">New</button></h2>
+        <input id="layoutSearch" placeholder="Search layouts…" oninput="renderLayoutList()" />
+        <div id="layoutList" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <h2>Save / Load</h2>
+        <div class="stack">
+          <button onclick="saveLayout()">Save current</button>
+          <button class="secondary" onclick="saveAsLayout()">Save as…</button>
+          <div class="grid2">
+            <button class="ghost" onclick="duplicateLayout()">Duplicate</button>
+            <button class="ghost" onclick="renameLayout()">Rename</button>
+          </div>
+          <div class="grid2">
+            <button class="ghost" onclick="exportLayout()">Export</button>
+            <label class="ghost" style="margin:0"><span>Import JSON</span><input type="file" accept="application/json,.json" onchange="importLayout(this.files[0])"></label>
+          </div>
+          <button class="danger" onclick="deleteLayout()">Delete layout</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>System</h2>
+        <div id="statusPanel" class="stack hint">Loading…</div>
+      </div>
+    </aside>
+
+    <main>
+      <div class="tabs" style="margin-bottom:14px">
+        <button class="tab active" data-section="studio" onclick="showSection('studio')">Studio</button>
+        <button class="tab" data-section="data" onclick="showSection('data')">Data</button>
+        <button class="tab" data-section="device" onclick="showSection('device')">Device</button>
+        <button class="tab" data-section="quick" onclick="showSection('quick')">Quick Actions</button>
+      </div>
+
+      <section id="section-studio" class="section active">
+        <div class="workspace">
+          <div class="card stage-card">
+            <div class="stage-header">
+              <div><h2 style="margin:0">Design + Preview</h2><div class="hint" id="dirtyHint">No layout loaded</div></div>
+              <div class="mode-switch"><button id="modeDesign" class="active" onclick="setPreviewMode('design')">Design</button><button id="modeServer" onclick="setPreviewMode('server')">Rendered</button></div>
+            </div>
+            <div class="toolbar">
+              <button class="tool-btn primary" onclick="addWidget('text')">+ Text</button>
+              <button class="tool-btn" onclick="addWidget('rect')">+ Rect</button>
+              <button class="tool-btn" onclick="addWidget('line')">+ Line</button>
+              <button class="tool-btn" onclick="addWidget('clock')">+ Clock</button>
+              <button class="tool-btn" onclick="addWidget('date')">+ Date</button>
+              <button class="tool-btn" onclick="toggleGrid()">Grid</button>
+              <button class="tool-btn" onclick="undo()">Undo</button>
+              <button class="tool-btn" onclick="redo()">Redo</button>
+            </div>
+            <div class="canvas-shell">
+              <div class="device-frame"><div class="screen-wrap">
+                <canvas id="editorCanvas" width="512" height="512"></canvas>
+                <img id="serverPreview" alt="Server rendered preview" />
+                <div id="gridOverlay" class="grid-overlay"></div>
+              </div></div>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="grid2">
+              <div class="metric"><div class="label">Layout</div><div class="value" id="metricLayout">—</div></div>
+              <div class="metric"><div class="label">Widgets</div><div class="value" id="metricWidgets">0</div></div>
+            </div>
+            <div class="card properties"><h2>Properties</h2><div id="properties" class="hint">Select a widget on the canvas or in the layer list.</div></div>
+            <div class="card"><h2>Layers</h2><div id="widgetList"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="section-data" class="section">
+        <div class="workspace">
+          <div class="stack">
+            <div class="card">
+              <h2>Data Sources <button class="secondary" onclick="newDataSource()">New source</button></h2>
+              <div id="sourceList"></div>
+            </div>
+            <div class="card"><h2>Data Health <button class="secondary" onclick="refreshData()">Refresh data</button></h2><div id="dataCards"></div></div>
+            <div class="card"><h2>Raw data</h2><pre id="rawData">Loading…</pre></div>
+          </div>
+          <div class="card properties">
+            <h2>Source Editor</h2>
+            <div id="sourceEditor" class="hint">Select a data source to edit symbols, weather location, API key, refresh interval, and enabled state.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="section-device" class="section">
+        <div class="workspace"><div class="card"><h2>Device</h2><div id="devicePanel" class="stack"></div></div><div class="card"><h2>Brightness</h2><label><span>Brightness: <b id="brightnessLabel">100%</b></span><input type="range" min="0" max="100" value="100" oninput="brightnessLabel.textContent=this.value+'%'" onchange="setBrightness(this.value)"></label></div></div>
+      </section>
+
+      <section id="section-quick" class="section">
+        <div class="workspace"><div class="card"><h2>Quick Text</h2><div class="stack"><input id="quickText" placeholder="Hello" maxlength="20"><div class="grid2"><label><span>Text color</span><input id="quickTextColor" type="color" value="#ffffff"></label><label><span>Background</span><input id="quickTextBg" type="color" value="#000000"></label></div><button onclick="sendQuickText()">Send text</button></div></div><div class="card"><h2>Clear</h2><label><span>Color</span><input id="clearColor" type="color" value="#000000"></label><button class="danger" onclick="clearDisplay()">Clear display</button></div></div>
+      </section>
+    </main>
+
+    <aside class="right">
+      <div class="card"><h2>Activity</h2><div id="events"></div></div>
+      <div class="card"><h2>Design checks</h2><div id="checks" class="stack hint"></div></div>
+    </aside>
+  </div>
+
+  <dialog id="promptDialog"><div class="dialog-body"><h2 id="promptTitle">Name</h2><label><span id="promptLabel">Layout name</span><input id="promptInput"></label></div><div class="dialog-footer"><button class="ghost" onclick="promptDialog.close()">Cancel</button><button onclick="submitPrompt()">OK</button></div></dialog>
+
+<script>
+const SCALE=8; let status={}, layouts=[], data={}, dataConfig={sources:{}}, sourceStatus={}, sourceTestResults={}, selectedSourceName=null, currentLayout=null, current=null, selected=null, dirty=false, mode='design';
+let undoStack=[], redoStack=[], promptResolver=null; const canvas=document.getElementById('editorCanvas'), ctx=canvas.getContext('2d'); ctx.imageSmoothingEnabled=false;
+const FONT5={'0':[14,17,19,21,25,17,14],'1':[4,12,4,4,4,4,14],'2':[14,17,1,6,8,16,31],'3':[14,17,1,6,1,17,14],'4':[2,6,10,18,31,2,2],'5':[31,16,30,1,1,17,14],'6':[6,8,16,30,17,17,14],'7':[31,1,2,4,8,8,8],'8':[14,17,17,14,17,17,14],'9':[14,17,17,15,1,2,12],':':[0,4,0,0,4,0,0],'.':[0,0,0,0,0,0,4],'-':[0,0,0,31,0,0,0],'+':[0,4,4,31,4,4,0],' ': [0,0,0,0,0,0,0]};
+'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz$%^=/_'.split('').forEach(c=>{ if(!FONT5[c]) FONT5[c]=[14,17,17,31,17,17,17]; });
+function log(msg,type=''){ const el=document.createElement('div'); el.className='event-item'; el.innerHTML=`<div class="between"><b>${msg}</b><span class="badge ${type}">${new Date().toLocaleTimeString()}</span></div>`; events.prepend(el); while(events.children.length>18) events.lastChild.remove(); }
+async function api(path, opts={}){ const r=await fetch(path,opts); if(!r.ok){ let t=await r.text(); try{t=JSON.parse(t).detail||t}catch{} throw new Error(t); } return r.headers.get('content-type')?.includes('application/json')?r.json():r.text(); }
+function showSection(name){ document.querySelectorAll('.section').forEach(s=>s.classList.remove('active')); document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.section===name)); document.getElementById('section-'+name).classList.add('active'); if(name==='data') loadData(); if(name==='device') loadDevice(); }
+async function refreshAll(){ await Promise.allSettled([loadStatus(),loadLayouts(),loadData()]); await loadCurrentLayout(); await renderServerPreview(); renderAll(); }
+async function loadStatus(){ status=await api('/api/status'); statusDot.classList.toggle('ok',!!status.device_connected); statusText.textContent=status.device_connected?status.device_ip:'Disconnected'; sendBtn.disabled=!status.device_connected; statusPanel.innerHTML=`<div class="between"><span>Layout</span><b>${status.layout_name||'None'}</b></div><div class="between"><span>Scheduler</span><b>${status.scheduler_running?'Running':'Stopped'}</b></div><div class="between"><span>Jobs</span><b>${status.scheduled_jobs?.length||0}</b></div><div class="between"><span>Device</span><b>${status.device_ip||'Not connected'}</b></div>`; currentLayout=status.layout_name; }
+async function loadLayouts(){ layouts=await api('/api/layouts/meta'); renderLayoutList(); }
+function renderLayoutList(){ const q=(layoutSearch.value||'').toLowerCase(); layoutList.innerHTML=layouts.filter(l=>l.name.toLowerCase().includes(q)).map(l=>`<div class="layout-item ${l.active?'active':''}" onclick="activateLayout('${esc(l.name)}')"><div class="between"><b>${l.name}</b>${l.active?'<span class="badge ok">active</span>':''}</div><div class="hint">${l.widgets} widgets · refresh ${l.refresh_seconds||'—'}s</div></div>`).join('')||'<div class="hint">No layouts</div>'; }
+async function activateLayout(name){ await api('/api/layout/load/'+encodeURIComponent(name),{method:'POST'}); currentLayout=name; log('Loaded '+name,'ok'); await refreshAll(); }
+async function loadCurrentLayout(){ if(!currentLayout) return; current=await api('/api/layout'); selected=null; dirty=false; undoStack=[]; redoStack=[]; renderAll(); }
+function renderAll(){ renderCanvas(); renderWidgets(); renderProperties(); metricLayout.textContent=current?.name||'—'; metricWidgets.textContent=current?.widgets?.length||0; dirtyHint.textContent=current?`${dirty?'Unsaved changes':'Saved'} · ${current.name}`:'No layout loaded'; renderChecks(); }
+function colorOf(w){ return typeof w.color==='string'?w.color:(w.color?.default||'#ffffff'); }
+function renderCanvas(){ if(!current) return; ctx.imageSmoothingEnabled=false; ctx.fillStyle=current.background||'#000'; ctx.fillRect(0,0,512,512); (current.widgets||[]).forEach(drawWidget); if(selected) drawSelection(selected); }
+function drawWidget(w){ ctx.fillStyle=colorOf(w); ctx.strokeStyle=colorOf(w); ctx.lineWidth=SCALE; if(w.type==='rect'){ w.filled===false?ctx.strokeRect(w.x*SCALE,w.y*SCALE,(w.width||8)*SCALE,(w.height||8)*SCALE):ctx.fillRect(w.x*SCALE,w.y*SCALE,(w.width||8)*SCALE,(w.height||8)*SCALE); } else if(w.type==='line'){ ctx.beginPath(); ctx.moveTo((w.x1||0)*SCALE,(w.y1||0)*SCALE); ctx.lineTo((w.x2||20)*SCALE,(w.y2||0)*SCALE); ctx.stroke(); } else { drawText(previewText(w), w.x||0, w.y||0, colorOf(w)); } }
+function previewText(w){ if(w.type==='clock') return new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); if(w.type==='date') return new Date().toLocaleDateString([], {month:'numeric',day:'numeric'}); return w.text||w.data_source||'TEXT'; }
+function drawText(text,x,y,color){ ctx.fillStyle=color; let cx=x; for(const ch of String(text)){ const b=FONT5[ch]||FONT5[ch.toUpperCase()]||FONT5['A']; for(let r=0;r<b.length;r++) for(let c=0;c<5;c++) if(b[r]&(1<<(4-c))) ctx.fillRect((cx+c)*SCALE,(y+r)*SCALE,SCALE,SCALE); cx+=6; } }
+function drawSelection(w){ ctx.strokeStyle='#22d3ee'; ctx.lineWidth=2; ctx.setLineDash([6,5]); const b=bounds(w); ctx.strokeRect(b.x*SCALE-3,b.y*SCALE-3,b.w*SCALE+6,b.h*SCALE+6); ctx.setLineDash([]); }
+function bounds(w){ if(w.type==='rect') return {x:w.x||0,y:w.y||0,w:w.width||8,h:w.height||8}; if(w.type==='line') return {x:Math.min(w.x1||0,w.x2||20),y:Math.min(w.y1||0,w.y2||0),w:Math.max(1,Math.abs((w.x2||20)-(w.x1||0))),h:Math.max(1,Math.abs((w.y2||0)-(w.y1||0)))}; return {x:w.x||0,y:w.y||0,w:String(previewText(w)).length*6,h:7}; }
+function renderWidgets(){ widgetList.innerHTML=(current?.widgets||[]).map(w=>`<div class="widget-item" onclick="selectWidget('${w.id}')"><div class="between"><b>${w.type}</b><span class="muted">${w.id||''}</span></div><div class="hint">${previewText(w).slice(0,28)}</div></div>`).join('')||'<div class="hint">No widgets yet. Add one.</div>'; }
+function selectWidget(id){ selected=(current.widgets||[]).find(w=>w.id===id); renderAll(); }
+function renderProperties(){ if(!selected){ properties.innerHTML='<div class="hint">Select a widget on the canvas or in the layer list.</div>'; return; } const pos=selected.type==='line'?lineFields():xyFields(); properties.innerHTML=`<div class="stack"><div class="badge">${selected.type}</div>${pos}${textFields()}<label><span>Color</span><input type="color" value="${colorOf(selected)}" oninput="change('color',this.value)"></label><button class="danger" onclick="deleteWidget()">Delete widget</button></div>`; }
+function xyFields(){ return `<div class="grid2"><label><span>X</span><input type="number" min="0" max="63" value="${selected.x||0}" onchange="change('x',num(this))"></label><label><span>Y</span><input type="number" min="0" max="63" value="${selected.y||0}" onchange="change('y',num(this))"></label></div>`; }
+function lineFields(){ return `<div class="grid2"><label><span>X1</span><input type="number" value="${selected.x1||0}" onchange="change('x1',num(this))"></label><label><span>Y1</span><input type="number" value="${selected.y1||0}" onchange="change('y1',num(this))"></label><label><span>X2</span><input type="number" value="${selected.x2||20}" onchange="change('x2',num(this))"></label><label><span>Y2</span><input type="number" value="${selected.y2||0}" onchange="change('y2',num(this))"></label></div>`; }
+function textFields(){ if(selected.type==='text') return `<label><span>Text</span><input value="${attr(selected.text||'')}" oninput="change('text',this.value)"></label><label><span>Data binding</span><input value="${attr(selected.data_source||'')}" oninput="change('data_source',this.value)"></label>`; if(selected.type==='rect') return `<div class="grid2"><label><span>Width</span><input type="number" value="${selected.width||8}" onchange="change('width',num(this))"></label><label><span>Height</span><input type="number" value="${selected.height||8}" onchange="change('height',num(this))"></label></div>`; return ''; }
+function num(el){ return Math.max(0, Math.min(63, parseInt(el.value||0,10))); }
+function pushHistory(){ undoStack.push(JSON.stringify(current)); if(undoStack.length>50) undoStack.shift(); redoStack=[]; }
+function change(k,v){ pushHistory(); selected[k]=v; dirty=true; renderAll(); schedulePreview(); }
+function addWidget(type){ if(!current) return; pushHistory(); const id=type+'_'+Math.random().toString(16).slice(2,8); const base={id,type,color:'#ffffff'}; const w= type==='line'?{...base,x1:4,y1:4,x2:28,y2:4}: type==='rect'?{...base,x:4,y:4,width:18,height:10,filled:true}: type==='clock'?{...base,x:4,y:4,font:'5x7',format_24h:false,show_seconds:false,timezone_offset:0,auto_dst:true}: type==='date'?{...base,x:4,y:14,font:'5x7',format:'%m/%d',timezone_offset:0,auto_dst:true}:{...base,x:4,y:4,font:'5x7',text:'Hello'}; current.widgets.push(w); selected=w; dirty=true; renderAll(); schedulePreview(); }
+function deleteWidget(){ if(!selected) return; pushHistory(); current.widgets=current.widgets.filter(w=>w!==selected); selected=null; dirty=true; renderAll(); schedulePreview(); }
+function undo(){ if(!undoStack.length) return; redoStack.push(JSON.stringify(current)); current=JSON.parse(undoStack.pop()); dirty=true; selected=null; renderAll(); }
+function redo(){ if(!redoStack.length) return; undoStack.push(JSON.stringify(current)); current=JSON.parse(redoStack.pop()); dirty=true; selected=null; renderAll(); }
+canvas.addEventListener('click',e=>{ if(!current) return; const r=canvas.getBoundingClientRect(), x=Math.floor((e.clientX-r.left)/(r.width/64)), y=Math.floor((e.clientY-r.top)/(r.height/64)); selected=[...(current.widgets||[])].reverse().find(w=>{const b=bounds(w); return x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h}); renderAll(); });
+async function saveLayout(){ if(!current) return; await api('/api/layouts/'+encodeURIComponent(current.name),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({layout:current})}); dirty=false; log('Saved '+current.name,'ok'); await refreshAll(); }
+async function promptFor(title,label,value=''){ promptTitle.textContent=title; promptLabel.textContent=label; promptInput.value=value; promptDialog.showModal(); promptInput.focus(); return new Promise(res=>promptResolver=res); }
+function submitPrompt(){ const v=promptInput.value.trim(); promptDialog.close(); if(promptResolver) promptResolver(v); }
+async function newLayout(){ const name=await promptFor('New layout','Name','New Layout'); if(!name) return; await api('/api/layout/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})}); await activateLayout(name); }
+async function saveAsLayout(){ const name=await promptFor('Save as','New layout name', current?.name+' copy'); if(!name||!current) return; const copy={...current,name}; await api('/api/layouts/'+encodeURIComponent(name),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({layout:copy})}); await activateLayout(name); }
+async function duplicateLayout(){ const name=await promptFor('Duplicate layout','New layout name', currentLayout+' copy'); if(!name) return; await api(`/api/layouts/${encodeURIComponent(currentLayout)}/duplicate/${encodeURIComponent(name)}`,{method:'POST'}); await refreshAll(); }
+async function renameLayout(){ const name=await promptFor('Rename layout','New layout name', currentLayout); if(!name||name===currentLayout) return; await api(`/api/layouts/${encodeURIComponent(currentLayout)}/rename/${encodeURIComponent(name)}`,{method:'POST'}); await activateLayout(name); }
+async function deleteLayout(){ if(!currentLayout||!confirm('Delete layout '+currentLayout+'?')) return; await api('/api/layouts/'+encodeURIComponent(currentLayout),{method:'DELETE'}); currentLayout=null; current=null; await refreshAll(); }
+function exportLayout(){ if(!current) return; const blob=new Blob([JSON.stringify(current,null,2)],{type:'application/json'}), a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=current.name+'.json'; a.click(); URL.revokeObjectURL(a.href); }
+async function importLayout(file){ if(!file) return; const fd=new FormData(); fd.append('file',file); const r=await api('/api/layouts/import',{method:'POST',body:fd}); await activateLayout(r.layout); }
+function setPreviewMode(m){ mode=m; modeDesign.classList.toggle('active',m==='design'); modeServer.classList.toggle('active',m==='server'); editorCanvas.style.display=m==='design'?'block':'none'; serverPreview.style.display=m==='server'?'block':'none'; if(m==='server') renderServerPreview(); }
+let previewTimer=null; function schedulePreview(){ clearTimeout(previewTimer); previewTimer=setTimeout(renderServerPreview,350); }
+async function renderServerPreview(){ if(!current) return; try{ const r=await api('/api/preview/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({layout:current})}); serverPreview.src=r.image; }catch(e){ log('Preview failed: '+e.message,'err'); } }
+function toggleGrid(){ gridOverlay.classList.toggle('hidden'); }
+function renderChecks(){ if(!current){ checks.innerHTML='No layout loaded'; return; } const warnings=[]; for(const w of current.widgets||[]){ const b=bounds(w); if(b.x+b.w>64||b.y+b.h>64) warnings.push(`${w.type} may clip at edge`); if((w.type==='text'||w.type==='clock'||w.type==='date') && b.w>64) warnings.push(`${w.type} text is wider than screen`); } checks.innerHTML=warnings.length?warnings.map(w=>`<div class="badge warn">${w}</div>`).join(''):'<div class="badge ok">No obvious clipping</div>'; }
+async function loadData(){
+  const results=await Promise.allSettled([api('/api/data'), api('/api/datasources/config'), api('/api/datasources')]);
+  data=results[0].status==='fulfilled'?results[0].value:{};
+  dataConfig=results[1].status==='fulfilled'?results[1].value:{sources:{}};
+  sourceStatus=results[2].status==='fulfilled'?results[2].value:{};
+  if(!selectedSourceName || !dataConfig.sources[selectedSourceName]) selectedSourceName=Object.keys(dataConfig.sources||{})[0]||null;
+  renderRawData();
+  renderDataHealth();
+  renderSourceList(); renderSourceEditor();
+}
+function renderRawData(){
+  if(!selectedSourceName){
+    rawData.textContent=JSON.stringify(data,null,2);
+    return;
+  }
+  const info=sourceStatus[selectedSourceName]||{};
+  const selectedPayload=data[selectedSourceName] ?? (info.error ? {error:info.error} : null);
+  rawData.textContent=JSON.stringify({[selectedSourceName]: selectedPayload},null,2);
+}
+function renderDataHealth(){
+  if(!selectedSourceName || !dataConfig.sources?.[selectedSourceName]){
+    dataCards.innerHTML='<div class="hint">Select a data source.</div>';
+    return;
+  }
+  const cfg=dataConfig.sources[selectedSourceName]||{};
+  const info=sourceStatus[selectedSourceName]||{};
+  const val=data[selectedSourceName];
+  const enabled=cfg.enabled!==false;
+  let body='';
+  let badge='';
+  if(info.error){
+    badge='<span class="badge err">error</span>';
+    body=`<div class="hint">${attr(info.error)}</div>`;
+  } else if(!enabled){
+    badge='<span class="badge">disabled</span>';
+    body='<div class="hint">Source is disabled. Toggle it on to fetch and display data.</div>';
+  } else if(val){
+    badge='<span class="badge ok">live</span>';
+    body=renderDataValue(val);
+  } else {
+    badge='<span class="badge warn">no data</span>';
+    body='<div class="hint">No cached data yet. Test fetch or refresh data.</div>';
+  }
+  dataCards.innerHTML=`<div class="data-card"><div class="between"><b>${selectedSourceName}</b>${badge}</div>${body}</div>`;
+}
+function renderSourceList(){
+  const sources=dataConfig.sources||{};
+  sourceList.innerHTML=Object.entries(sources).map(([name,cfg])=>{
+    const info=sourceStatus[name]||{}; const enabled=cfg.enabled!==false; const err=info.error;
+    const badge=err?'<span class="badge err">error</span>':enabled?'<span class="badge ok">enabled</span>':'<span class="badge">disabled</span>';
+    const active=name===selectedSourceName?'active':'';
+    return `<div class="layout-item ${active}" onclick="selectSource('${esc(name)}')"><div class="between"><b>${name}</b>${badge}</div><div class="hint">${cfg.type||'unknown'} · refresh ${cfg.refresh_seconds||'—'}s${err?'<br>'+attr(err):''}</div></div>`;
+  }).join('') || '<div class="hint">No data sources configured.</div>';
+}
+function selectSource(name){ selectedSourceName=name; renderSourceList(); renderRawData(); renderDataHealth(); renderSourceEditor(); }
+function renderSourceEditor(){
+  if(!selectedSourceName || !dataConfig.sources?.[selectedSourceName]){ sourceEditor.innerHTML='<div class="hint">Select a source, or create one.</div>'; return; }
+  const c=dataConfig.sources[selectedSourceName];
+  const info=sourceStatus[selectedSourceName]||{};
+  const lastPayload=sourceTestResults[selectedSourceName] || data[selectedSourceName] || (info.error ? {success:false, error:info.error} : {});
+  sourceEditor.innerHTML=`<div class="stack">
+    <div class="between"><div><b>${selectedSourceName}</b><div class="hint">${c.type}</div></div><span class="badge ${info.error?'err':c.enabled!==false?'ok':''}">${info.error?'error':c.enabled!==false?'enabled':'disabled'}</span></div>
+    ${info.error?`<div class="data-card"><div class="between"><b>Last error</b><span class="badge err">error</span></div><div class="hint">${attr(info.error)}</div></div>`:''}
+    <label><span>Name</span><input id="srcName" value="${attr(selectedSourceName)}" disabled></label>
+    <label><span>Type</span><select id="srcType" onchange="sourceTypeChanged()"><option value="stocks" ${c.type==='stocks'?'selected':''}>stocks</option><option value="weather" ${c.type==='weather'?'selected':''}>weather</option><option value="generic" ${c.type==='generic'?'selected':''}>generic</option></select></label>
+    <div id="sourceTypeFields"></div>
+    <div class="grid2"><label><span>Refresh seconds</span><input id="srcRefresh" type="number" min="1" value="${c.refresh_seconds||300}"></label><label><span>Enabled</span><select id="srcEnabled"><option value="true" ${c.enabled!==false?'selected':''}>enabled</option><option value="false" ${c.enabled===false?'selected':''}>disabled</option></select></label></div>
+    <div class="grid2"><button onclick="saveSource()">Save source</button><button class="secondary" onclick="testSource()">Test fetch</button></div>
+    <div class="grid2"><button class="ghost" onclick="toggleSource()">Toggle</button><button class="danger" onclick="deleteSource()">Delete</button></div>
+    <label><span>Last fetch / test response</span><pre id="sourceTestOutput">${attr(JSON.stringify(lastPayload,null,2))}</pre></label>
+  </div>`;
+  renderSourceTypeFields(c);
+}
+function sourceTypeChanged(){ renderSourceTypeFields(readSourceDraft()); }
+function renderSourceTypeFields(c){
+  if(c.type==='stocks') sourceTypeFields.innerHTML=`<label><span>Symbols, comma-separated</span><input id="srcSymbols" value="${attr((c.symbols||[]).join(', '))}" placeholder="^GSPC, ^IXIC, GC=F, SI=F"></label>`;
+  else if(c.type==='weather') sourceTypeFields.innerHTML=`<label><span>OpenWeather API key or env var reference</span><input id="srcApiKey" type="password" value="${attr(c.api_key||'')}" placeholder="${'${OPENWEATHER_API_KEY}'}"></label><label><span>Location</span><input id="srcLocation" value="${attr(c.location||'Hesston,KS,US')}" placeholder="Hesston,KS,US"></label><label><span>Units</span><select id="srcUnits"><option value="imperial" ${c.units!=='metric'&&c.units!=='standard'?'selected':''}>imperial °F</option><option value="metric" ${c.units==='metric'?'selected':''}>metric °C</option><option value="standard" ${c.units==='standard'?'selected':''}>standard K</option></select></label>`;
+  else sourceTypeFields.innerHTML=`<label><span>URL</span><input id="srcUrl" value="${attr(c.url||'')}" placeholder="https://..."></label><div class="grid2"><label><span>Method</span><select id="srcMethod"><option value="GET" ${c.method!=='POST'?'selected':''}>GET</option><option value="POST" ${c.method==='POST'?'selected':''}>POST</option></select></label><label><span>JSON path</span><input id="srcJsonPath" value="${attr(c.json_path||'')}" placeholder="$.data.value"></label></div>`;
+}
+function readSourceDraft(){
+  const type=document.getElementById('srcType')?.value || 'stocks';
+  const cfg={type, refresh_seconds:parseInt(document.getElementById('srcRefresh')?.value||'300',10), enabled:document.getElementById('srcEnabled')?.value!=='false'};
+  if(type==='stocks') cfg.symbols=(document.getElementById('srcSymbols')?.value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  if(type==='weather'){ cfg.api_key=document.getElementById('srcApiKey')?.value||''; cfg.location=document.getElementById('srcLocation')?.value||''; cfg.units=document.getElementById('srcUnits')?.value||'imperial'; }
+  if(type==='generic'){ cfg.url=document.getElementById('srcUrl')?.value||''; cfg.method=document.getElementById('srcMethod')?.value||'GET'; cfg.json_path=document.getElementById('srcJsonPath')?.value||''; }
+  return cfg;
+}
+async function saveSource(){ if(!selectedSourceName) return; const cfg=readSourceDraft(); await api('/api/datasources/'+encodeURIComponent(selectedSourceName),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:cfg})}); log('Saved data source '+selectedSourceName,'ok'); await loadData(); await renderServerPreview(); }
+async function testSource(){ if(!selectedSourceName) return; const out=document.getElementById('sourceTestOutput'); try{ const name=selectedSourceName; const r=await api('/api/datasources/'+encodeURIComponent(name)+'/test',{method:'POST'}); sourceTestResults[name]=r; out.textContent=JSON.stringify(r,null,2); log('Tested '+name, r.success?'ok':'err'); await loadData(); }catch(e){ sourceTestResults[selectedSourceName]={success:false,error:e.message}; out.textContent=e.message; log('Test failed: '+e.message,'err'); } }
+async function toggleSource(){ if(!selectedSourceName) return; const name=selectedSourceName; const r=await api('/api/datasources/'+encodeURIComponent(name)+'/toggle',{method:'POST'}); sourceTestResults[name]=r; log((r.enabled?'Enabled ':'Disabled ')+name, r.success===false?'err':'ok'); await loadData(); await renderServerPreview(); }
+async function deleteSource(){ if(!selectedSourceName||!confirm('Delete data source '+selectedSourceName+'?')) return; await api('/api/datasources/'+encodeURIComponent(selectedSourceName),{method:'DELETE'}); log('Deleted '+selectedSourceName,'ok'); selectedSourceName=null; await loadData(); }
+async function newDataSource(){ const name=await promptFor('New data source','Source name','weather'); if(!name) return; const type=await promptFor('Source type','stocks, weather, or generic','stocks'); const cfg={type:type||'stocks', enabled:true, refresh_seconds:type==='weather'?600:300}; if(cfg.type==='stocks') cfg.symbols=['^GSPC']; if(cfg.type==='weather'){ cfg.api_key='${OPENWEATHER_API_KEY}'; cfg.location='Hesston,KS,US'; cfg.units='imperial'; } await api('/api/datasources/'+encodeURIComponent(name),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:cfg})}); selectedSourceName=name; log('Created data source '+name,'ok'); await loadData(); }
+function renderDataValue(val){
+  if(typeof val==='object'&&val){
+    const entries=Object.entries(val).slice(0,8);
+    const looksLikeMarket=entries.some(([,v])=>v&&typeof v==='object'&&('price' in v||'change_percent' in v));
+    if(looksLikeMarket){
+      const rows=entries.map(([symbol,v])=>{ const up=(v.change||0)>=0; return `<tr><td><b>${symbol}</b></td><td>${fmt(v.price)}</td><td style="color:${up?'#4ade80':'#fb7185'}">${up?'+':''}${fmt(v.change)}</td><td style="color:${up?'#4ade80':'#fb7185'}">${up?'+':''}${fmt(v.change_percent)}%</td></tr>`; }).join('');
+      return `<table class="table"><thead><tr><th>Symbol</th><th>Price</th><th>Change</th><th>%</th></tr></thead>${rows}</table>`;
+    }
+    const rows=entries.map(([k,v])=>`<tr><td>${k}</td><td>${typeof v==='object'?JSON.stringify(v).slice(0,70):v}</td></tr>`).join('');
+    return `<table class="table">${rows}</table>`;
+  }
+  return `<div class="hint">${val}</div>`;
+}
+function fmt(v){ return Number.isFinite(Number(v))?Number(v).toLocaleString(undefined,{maximumFractionDigits:2}):(v ?? '—'); }
+async function refreshData(){
+  try{
+    const r=await api('/api/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    await loadData();
+    if(r.errors && Object.keys(r.errors).length){
+      log('Data refreshed with errors: '+Object.entries(r.errors).map(([n,e])=>`${n}: ${e}`).join('; '),'err');
+    } else {
+      log('Data refreshed','ok');
+    }
+    await renderServerPreview();
+  }catch(e){
+    dataCards.innerHTML=`<div class="data-card"><div class="between"><b>Refresh failed</b><span class="badge err">error</span></div><div class="hint">${attr(e.message)}</div></div>`;
+    log('Refresh failed: '+e.message,'err');
+  }
+}
+async function loadDevice(){ const ping=await api('/api/device/ping'); devicePanel.innerHTML=`<div class="between"><span>Connected</span><b>${ping.connected?'Yes':'No'}</b></div><div class="between"><span>IP</span><b>${ping.ip||'—'}</b></div><button onclick="reconnectDevice()">Reconnect</button>`; }
+async function reconnectDevice(){ try{ await api('/api/device/reconnect',{method:'POST'}); log('Reconnected','ok'); }catch(e){ log('Reconnect failed: '+e.message,'err'); } await refreshAll(); }
+async function setBrightness(v){ try{ await api('/api/brightness/'+v,{method:'POST'}); log('Brightness '+v+'%','ok'); }catch(e){ log('Brightness failed: '+e.message,'err'); } }
+async function sendToDevice(){ try{ await saveLayout(); await api('/api/send',{method:'POST'}); log('Sent to device','ok'); }catch(e){ log('Send failed: '+e.message,'err'); } }
+async function sendQuickText(){ try{ await api('/api/quick/text',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:quickText.value,color:quickTextColor.value,background:quickTextBg.value})}); log('Quick text sent','ok'); }catch(e){ log('Quick text failed: '+e.message,'err'); } }
+async function clearDisplay(){ try{ await api('/api/quick/text',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:'',background:clearColor.value})}); log('Display cleared','ok'); }catch(e){ log('Clear failed: '+e.message,'err'); } }
+function esc(s){ return String(s).replace(/'/g,"\\'"); } function attr(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+refreshAll().then(()=>log('Divoom Studio ready','ok')).catch(e=>log('Startup failed: '+e.message,'err'));
+</script>
+</body>
+</html>

@@ -1,10 +1,8 @@
 """Scheduler for periodic data updates and display refresh."""
 
-import asyncio
 import logging
-from datetime import datetime
-from pathlib import Path
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -20,8 +18,8 @@ class Scheduler:
     def __init__(self):
         """Initialize the scheduler."""
         self._scheduler = AsyncIOScheduler()
-        self._data_manager: Optional[DataSourceManager] = None
-        self._on_data_update: Optional[Callable[[dict[str, Any]], None]] = None
+        self._data_manager: DataSourceManager | None = None
+        self._on_data_update: Callable[[dict[str, Any]], None] | None = None
         self._running = False
 
     @property
@@ -85,7 +83,7 @@ class Scheduler:
         func: Callable,
         interval_seconds: int,
         job_id: str,
-        name: Optional[str] = None,
+        name: str | None = None,
     ) -> None:
         """Add a custom scheduled job.
 
@@ -115,6 +113,14 @@ class Scheduler:
             logger.info(f"Removed job '{job_id}'")
         except Exception as e:
             logger.warning(f"Could not remove job '{job_id}': {e}")
+
+    def reschedule_data_sources(self) -> None:
+        """Replace scheduled data-source refresh jobs with the current source config."""
+        for job in list(self._scheduler.get_jobs()):
+            if job.id.startswith("datasource_"):
+                self.remove_job(job.id)
+        if self._running:
+            self._schedule_data_sources()
 
     async def start(self) -> None:
         """Start the scheduler."""

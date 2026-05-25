@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 
 import requests
 from pydantic import Field
@@ -19,7 +19,7 @@ class WeatherDataSourceConfig(DataSourceConfig):
     """Configuration for weather data source."""
 
     type: str = "weather"
-    api_key: Optional[str] = Field(default=None, description="OpenWeatherMap API key")
+    api_key: str | None = Field(default=None, description="OpenWeatherMap API key")
     location: str = Field(default="New York,US", description="Location (city,country)")
     units: str = Field(default="imperial", description="Units: imperial, metric, or standard")
     refresh_seconds: int = Field(default=600, description="Refresh interval (default 10 min)")
@@ -38,10 +38,11 @@ class WeatherDataSource(DataSource):
         super().__init__(name, config)
         self.location = config.location
         self.units = config.units
+        self.last_service_response: dict[str, Any] | None = None
         # Support env var substitution for API key
         self.api_key = self._resolve_api_key(config.api_key)
 
-    def _resolve_api_key(self, api_key: Optional[str]) -> Optional[str]:
+    def _resolve_api_key(self, api_key: str | None) -> str | None:
         """Resolve API key, supporting environment variable substitution.
 
         Args:
@@ -52,7 +53,9 @@ class WeatherDataSource(DataSource):
         """
         if not api_key:
             # Try environment variable
-            return os.environ.get("OPENWEATHER_API_KEY") or os.environ.get("DIVOOM_OPENWEATHER_API_KEY")
+            return os.environ.get("OPENWEATHER_API_KEY") or os.environ.get(
+                "DIVOOM_OPENWEATHER_API_KEY"
+            )
 
         if api_key.startswith("${") and api_key.endswith("}"):
             env_var = api_key[2:-1]
@@ -67,6 +70,10 @@ class WeatherDataSource(DataSource):
             Dictionary with weather data
         """
         if not self.api_key:
+            self.last_service_response = {
+                "request_sent": False,
+                "reason": "API key was not configured, so no OpenWeatherMap request was sent.",
+            }
             raise ValueError("OpenWeatherMap API key not configured")
 
         loop = asyncio.get_event_loop()
@@ -83,8 +90,24 @@ class WeatherDataSource(DataSource):
 
         try:
             response = requests.get(OPENWEATHER_API_URL, params=params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
+            if self.api_key:
+                request_url = response.url.replace(self.api_key, "<redacted>")
+            else:
+                request_url = response.url
+            try:
+                response_json = response.json()
+            except ValueError:
+                response_json = None
+            self.last_service_response = {
+                "status_code": response.status_code,
+                "url": request_url,
+                "body": response.text,
+                "json": response_json,
+            }
+            if not response.ok:
+                body = response_json if response_json is not None else response.text
+                raise ValueError(f"OpenWeatherMap HTTP {response.status_code}: {body}")
+            data = response_json or {}
 
             # Extract relevant fields
             main = data.get("main", {})

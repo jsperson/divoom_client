@@ -2,9 +2,9 @@
 
 import logging
 import re
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
 from PIL import Image
 
@@ -120,7 +120,7 @@ class ExpressionEvaluator:
 class Renderer:
     """Renders layouts to frames."""
 
-    def __init__(self, assets_dir: Optional[Path] = None):
+    def __init__(self, assets_dir: Path | None = None):
         """Initialize renderer.
 
         Args:
@@ -131,7 +131,7 @@ class Renderer:
 
     def resolve_color(
         self,
-        color: Union[str, ConditionalColor],
+        color: str | ConditionalColor,
         evaluator: ExpressionEvaluator,
     ) -> tuple[int, int, int]:
         """Resolve a color value, evaluating conditions if needed.
@@ -165,11 +165,11 @@ class Renderer:
         """
         try:
             return format_str.format(value=value)
-        except (ValueError, KeyError) as e:
+        except (ValueError, KeyError, TypeError) as e:
             logger.warning(f"Format error: {e}")
             return str(value) if value is not None else ""
 
-    def load_image(self, src: str, data: dict[str, Any]) -> Optional[Image.Image]:
+    def load_image(self, src: str, data: dict[str, Any]) -> Image.Image | None:
         """Load an image, resolving data placeholders in path.
 
         Args:
@@ -463,7 +463,7 @@ class Renderer:
         else:
             logger.warning(f"Unknown widget type: {type(widget)}")
 
-    def render(self, layout: Layout, data: Optional[dict[str, Any]] = None) -> Frame:
+    def render(self, layout: Layout, data: dict[str, Any] | None = None) -> Frame:
         """Render a complete layout to a frame.
 
         Args:

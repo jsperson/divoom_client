@@ -4,11 +4,11 @@ import asyncio
 import json
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
-from divoom_client.core.pixoo import Pixoo
 from divoom_client.core.discovery import get_device
 from divoom_client.core.frame import Frame
+from divoom_client.core.pixoo import Pixoo
 from divoom_client.core.renderer import Renderer
 from divoom_client.core.scheduler import Scheduler
 from divoom_client.datasources.manager import DataSourceManager
@@ -34,12 +34,12 @@ class DisplayManager:
         self.config_dir = config_dir
         self.assets_dir = assets_dir
 
-        self._device: Optional[Pixoo] = None
-        self._layout: Optional[Layout] = None
+        self._device: Pixoo | None = None
+        self._layout: Layout | None = None
         self._data_manager = DataSourceManager()
         self._renderer = Renderer(assets_dir=assets_dir)
         self._scheduler = Scheduler()
-        self._current_frame: Optional[Frame] = None
+        self._current_frame: Frame | None = None
         self._last_data: dict[str, Any] = {}
 
         # Wire up scheduler callbacks
@@ -47,12 +47,12 @@ class DisplayManager:
         self._scheduler.set_update_callback(self._on_data_updated)
 
     @property
-    def device(self) -> Optional[Pixoo]:
+    def device(self) -> Pixoo | None:
         """Get the connected Pixoo device."""
         return self._device
 
     @property
-    def layout(self) -> Optional[Layout]:
+    def layout(self) -> Layout | None:
         """Get the current layout."""
         return self._layout
 
@@ -66,7 +66,7 @@ class DisplayManager:
         """Get the scheduler."""
         return self._scheduler
 
-    def connect(self, ip: Optional[str] = None) -> bool:
+    def connect(self, ip: str | None = None) -> bool:
         """Connect to a Pixoo device.
 
         Args:
@@ -112,7 +112,7 @@ class DisplayManager:
             logger.error(f"Failed to load layout: {e}")
             return False
 
-    def load_datasources(self, datasources_path: Optional[Path] = None) -> bool:
+    def load_datasources(self, datasources_path: Path | None = None) -> bool:
         """Load data sources from configuration.
 
         Args:
@@ -127,6 +127,7 @@ class DisplayManager:
             return False
 
         try:
+            self._data_manager.clear()
             self._data_manager.load_config(path)
             return True
         except Exception as e:
@@ -166,7 +167,7 @@ class DisplayManager:
             except Exception as e:
                 logger.error(f"Failed to send frame to device: {e}")
 
-    def render(self) -> Optional[Frame]:
+    def render(self) -> Frame | None:
         """Render the current layout with current data.
 
         Returns:
