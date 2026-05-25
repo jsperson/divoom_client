@@ -14,9 +14,11 @@ Good fits:
 - Desk displays
 - Weather + market tickers
 - Raspberry Pi always-on controllers
+- macOS/Linux desktop control stations
+- Windows development/use should work too, though the service examples are Linux/systemd-specific
 - Fast experimentation with Pixoo 64 layouts
 
-Keywords: Divoom, Pixoo, Pixoo 64, LED matrix, Raspberry Pi, dashboard, home automation, FastAPI, pixel art.
+Keywords: Divoom, Pixoo, Pixoo 64, LED matrix, Raspberry Pi, macOS, Windows, Linux, dashboard, home automation, FastAPI, pixel art.
 
 ## Highlights
 
@@ -44,6 +46,8 @@ make render-examples
 ```
 
 ## Fast start
+
+Divoom Studio is a Python app and works on macOS and Linux. Windows should work as well for local Studio/CLI use; the packaged always-on service instructions target Linux/systemd because that is the common Raspberry Pi deployment path.
 
 ### One-command local install
 
