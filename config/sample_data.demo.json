@@ -1,0 +1,19 @@
+{
+  "stocks": {
+    "AAPL": {"price": 185.42, "change": 2.35, "percent": 1.28},
+    "GOOGL": {"price": 174.80, "change": -1.12, "percent": -0.64},
+    "MSFT": {"price": 421.50, "change": 3.10, "percent": 0.74},
+    "^GSPC": {"price": 5321.41, "change": 18.44, "percent": 0.35},
+    "^IXIC": {"price": 16685.97, "change": -22.10, "percent": -0.13},
+    "GC=F": {"price": 2375.20, "change": 8.60, "percent": 0.36},
+    "SI=F": {"price": 31.12, "change": -0.18, "percent": -0.58}
+  },
+  "weather": {
+    "temp": 72,
+    "temp_min": 64,
+    "temp_max": 81,
+    "main": "Sunny",
+    "humidity": 42,
+    "icon": "sunny"
+  }
+}

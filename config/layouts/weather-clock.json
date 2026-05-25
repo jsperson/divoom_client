@@ -1,0 +1,17 @@
+{
+  "name": "weather-clock",
+  "background": "#050814",
+  "refresh_seconds": 300,
+  "widgets": [
+    {"type": "rect", "id": "sky", "x": 0, "y": 0, "width": 64, "height": 64, "color": "#050814", "filled": true},
+    {"type": "rect", "id": "top", "x": 0, "y": 0, "width": 64, "height": 14, "color": "#10244A", "filled": true},
+    {"type": "text", "id": "title", "x": 3, "y": 4, "font": "5x7", "text": "PIXOO", "color": "#7FDBFF"},
+    {"type": "text", "id": "temp", "x": 7, "y": 20, "font": "5x7", "data_source": "weather.temp", "format": "{value}F", "color": "#FFCA3A"},
+    {"type": "text", "id": "condition", "x": 6, "y": 32, "font": "4x6", "data_source": "weather.main", "format": "{value}", "color": "#FFFFFF"},
+    {"type": "line", "id": "divider", "x1": 5, "y1": 43, "x2": 58, "y2": 43, "color": "#2D4263"},
+    {"type": "text", "id": "hi_label", "x": 7, "y": 49, "font": "4x6", "text": "HI", "color": "#FF6B6B"},
+    {"type": "text", "id": "hi", "x": 20, "y": 49, "font": "4x6", "data_source": "weather.temp_max", "format": "{value}", "color": "#FF6B6B"},
+    {"type": "text", "id": "lo_label", "x": 36, "y": 49, "font": "4x6", "text": "LO", "color": "#6BCBFF"},
+    {"type": "text", "id": "lo", "x": 49, "y": 49, "font": "4x6", "data_source": "weather.temp_min", "format": "{value}", "color": "#6BCBFF"}
+  ]
+}

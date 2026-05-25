@@ -38,6 +38,7 @@ ENV/
 htmlcov/
 .tox/
 .mypy_cache/
+.ruff_cache/
 
 # Environment
 .env
@@ -53,6 +54,8 @@ Thumbs.db
 *.png
 *.jpg
 *.gif
+!docs/images/*.png
 
 # Config files with local settings
 config/device.json
+docs/images/*.tmp.png

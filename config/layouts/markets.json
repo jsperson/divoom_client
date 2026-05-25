@@ -1,0 +1,17 @@
+{
+  "name": "markets",
+  "background": "#000000",
+  "refresh_seconds": 300,
+  "widgets": [
+    {"type": "text", "id": "header", "x": 2, "y": 2, "font": "5x7", "text": "MARKET", "color": "#00E5FF"},
+    {"type": "line", "id": "line", "x1": 0, "y1": 12, "x2": 63, "y2": 12, "color": "#333333"},
+    {"type": "text", "id": "sp_label", "x": 2, "y": 17, "font": "4x6", "text": "SPX", "color": "#888888"},
+    {"type": "text", "id": "sp", "x": 26, "y": 17, "font": "4x6", "data_source": "stocks.^GSPC.percent", "format": "{value:+.1f}%", "color": {"conditions": [{"when": "stocks.^GSPC.percent < 0", "color": "#FF3B30"}, {"when": "stocks.^GSPC.percent >= 0", "color": "#00FF66"}], "default": "#FFFFFF"}},
+    {"type": "text", "id": "nas_label", "x": 2, "y": 27, "font": "4x6", "text": "NDQ", "color": "#888888"},
+    {"type": "text", "id": "nas", "x": 26, "y": 27, "font": "4x6", "data_source": "stocks.^IXIC.percent", "format": "{value:+.1f}%", "color": {"conditions": [{"when": "stocks.^IXIC.percent < 0", "color": "#FF3B30"}, {"when": "stocks.^IXIC.percent >= 0", "color": "#00FF66"}], "default": "#FFFFFF"}},
+    {"type": "text", "id": "gold_label", "x": 2, "y": 41, "font": "4x6", "text": "GLD", "color": "#D4AF37"},
+    {"type": "text", "id": "gold", "x": 26, "y": 41, "font": "4x6", "data_source": "stocks.GC=F.price", "format": "{value:.0f}", "color": "#D4AF37"},
+    {"type": "text", "id": "silver_label", "x": 2, "y": 51, "font": "4x6", "text": "SLV", "color": "#C0C0C0"},
+    {"type": "text", "id": "silver", "x": 26, "y": 51, "font": "4x6", "data_source": "stocks.SI=F.price", "format": "{value:.1f}", "color": "#C0C0C0"}
+  ]
+}

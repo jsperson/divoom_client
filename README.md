@@ -1,145 +1,128 @@
-# Divoom Pixoo 64 Client
+# Divoom Studio for Pixoo 64
 
-A display manager for Divoom Pixoo 64 LED displays with a web-based layout editor, live data sources, and scheduled updates.
+A polished local web studio for Divoom Pixoo 64 displays: design 64×64 layouts, preview them in the browser, bind widgets to live weather/market data, save/load JSON layouts, and publish to the device on a schedule.
 
-## Features
+![Divoom Studio UI](docs/images/studio-ui.png)
 
-- **Web UI** - Browser-based dashboard and layout editor
-- **Layout Editor** - Visual drag-and-drop editor with undo/redo support
-- **Live Data Sources** - Stock prices (via Yahoo Finance) and weather (via OpenWeatherMap)
-- **Conditional Colors** - Change widget colors based on data values
-- **Device Discovery** - Automatically find Pixoo devices on your network
-- **Scheduled Updates** - Auto-refresh data at configurable intervals
-- **CLI Tools** - Command-line interface for scripting and automation
+## Why this exists
 
-## Installation
+The Pixoo 64 is great hardware with a tiny canvas and a lot of personality. Divoom Studio turns it into a small programmable dashboard without making you hand-edit pixels at 01:00 like a gremlin with a JSON habit.
 
-### Prerequisites
+Good fits:
 
-- Python 3.10 or higher
-- A Divoom Pixoo 64 device on your local network
+- Home/lab dashboards
+- Desk displays
+- Weather + market tickers
+- Raspberry Pi always-on controllers
+- Fast experimentation with Pixoo 64 layouts
 
-### Quick Install (Raspberry Pi / Linux)
+Keywords: Divoom, Pixoo, Pixoo 64, LED matrix, Raspberry Pi, dashboard, home automation, FastAPI, pixel art.
 
-Run these commands to install and start as a system service:
+## Highlights
 
-```bash
-cd ~
-git clone https://github.com/jsperson/divoom_client.git
-cd divoom_client
-python3 -m venv .venv && source .venv/bin/activate && pip install -e .
-sudo cp divoom@.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now divoom@$USER
-```
+- Browser-based Studio UI with a dark, responsive layout
+- 64×64 design canvas plus rendered preview
+- Save, load, duplicate, rename, import, export, and delete layouts
+- Live data sources for Yahoo Finance market data and OpenWeatherMap weather
+- Source editor with explicit error/debug details for failed API calls
+- Conditional colors for positive/negative values
+- Device discovery and direct Pixoo control
+- CLI rendering to device or PNG files
+- Safe `--no-device` mode for local UI work
+- Dockerfile, compose example, systemd unit, and tag-based GitHub release workflow
 
-Then open `http://<your-pi-ip>:8080` in your browser to access the web UI.
+## Screenshots / example layouts
 
-To configure weather data, go to the **Data Sources** tab and enter your OpenWeatherMap API key.
+| Studio | Dashboard | Weather | Markets |
+|---|---|---|---|
+| ![Studio UI](docs/images/studio-ui.png) | ![Dashboard preview](docs/images/dashboard-preview.png) | ![Weather preview](docs/images/weather-clock-preview.png) | ![Markets preview](docs/images/markets-preview.png) |
 
-### Manual Install
-
-#### Using uv (recommended)
+The PNG previews are rendered by the project itself, not mocked artwork:
 
 ```bash
-git clone https://github.com/jsperson/divoom_client.git
-cd divoom_client
-uv venv
-source .venv/bin/activate
-uv pip install -e .
+make render-examples
 ```
 
-#### Using pip
+## Fast start
+
+### One-command local install
 
 ```bash
 git clone https://github.com/jsperson/divoom_client.git
 cd divoom_client
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
+make install
+make run
 ```
 
-## Quick Start
+Open:
 
-### 1. Discover your device
+```text
+http://localhost:8080
+```
+
+`make run` starts Studio in `--no-device` mode so you can edit and preview layouts before touching hardware.
+
+### Connect a Pixoo 64
 
 ```bash
+. .venv/bin/activate
 divoom discover
+divoom test
 ```
 
-This will scan your network and save the IP address of any Pixoo devices found to `config/device.json`.
-
-### 2. Start the web server
+Then run without `--no-device`:
 
 ```bash
-divoom serve config/layouts/Daily2.json --web
+divoom serve config/layouts/dashboard.json --web --port 8080
 ```
 
-Then open http://localhost:8080 in your browser.
+### Raspberry Pi service install
 
-### 3. Configure data sources
-
-Go to the **Data Sources** tab in the web UI to configure stock symbols and enter your OpenWeatherMap API key for weather data.
-
-## Web Interface
-
-The web interface has several tabs:
-
-### Dashboard
-- View current display preview
-- See data source status
-- Quick refresh controls
-
-### Layout Editor
-- Visual canvas editor (64x64 pixels, scaled 8x)
-- Add text, rectangles, and lines
-- Edit widget properties (position, color, font, data binding)
-- Undo/Redo support (Ctrl+Z / Ctrl+Y)
-- Save and load layouts
-
-### Data Sources
-- Configure stock symbols and weather locations
-- Enable/disable individual sources
-- Test data fetching
-
-### Device
-- View device information
-- Control power and brightness
-- Switch display channels
-- Scan network for devices
-
-### Quick Actions
-- Send quick text messages
-- Clear display with solid color
-- Activate preset layouts
-
-## CLI Commands
+From a Pi or Linux host:
 
 ```bash
-divoom --help              # Show all commands
-
-# Device control
-divoom discover            # Find Pixoo devices on network
-divoom test                # Test device connection
-divoom brightness 50       # Set brightness (0-100)
-divoom on                  # Turn display on
-divoom off                 # Turn display off
-divoom clear --color "#FF0000"  # Clear with color
-
-# Layouts
-divoom render layout.json  # Render layout to device
-divoom live layout.json    # Render with live data
-divoom demo                # Show demo pattern
-
-# Server
-divoom serve layout.json --web --port 8080  # Start web server
-divoom status              # Show data source status
-divoom fetch               # Fetch data from all sources
+git clone https://github.com/jsperson/divoom_client.git
+cd divoom_client
+make service-install
 ```
+
+Then open:
+
+```text
+http://<pi-ip>:8080
+```
+
+The systemd unit runs:
+
+```bash
+divoom serve config/layouts/Daily2.json --web --port 8080
+```
+
+Edit `divoom@.service` if you want a different default layout.
+
+## Docker
+
+Build and run locally:
+
+```bash
+make docker-build
+make docker-run
+```
+
+Or with Compose:
+
+```bash
+cp docker-compose.example.yml docker-compose.yml
+docker compose up --build
+```
+
+The container runs Studio in `--no-device` mode by default. Mount `./config:/app/config` to persist layouts and data-source settings.
 
 ## Configuration
 
-### Device Configuration (`config/device.json`)
+### Device config: `config/device.json`
+
+Create from the example or run `divoom discover`:
 
 ```json
 {
@@ -148,36 +131,77 @@ divoom fetch               # Fetch data from all sources
 }
 ```
 
-### Data Sources (`config/datasources.json`)
+### Data sources: `config/datasources.json`
+
+Start from the checked-in example:
+
+```bash
+cp config/datasources.example.json config/datasources.json
+```
+
+Example:
 
 ```json
 {
   "sources": {
     "stocks": {
       "type": "stocks",
-      "symbols": ["AAPL", "GOOGL", "MSFT"],
+      "symbols": ["^GSPC", "^IXIC", "GC=F", "SI=F"],
       "refresh_seconds": 300,
       "enabled": true
     },
     "weather": {
       "type": "weather",
-      "api_key": "your_openweathermap_api_key",
-      "location": "City,State,Country",
+      "enabled": true,
+      "api_key": "${OPENWEATHER_API_KEY}",
+      "location": "Hesston,KS,US",
       "units": "imperial",
-      "refresh_seconds": 600,
-      "enabled": true
+      "refresh_seconds": 600
     }
   }
 }
 ```
 
-## Layout Format
+Notes:
 
-Layouts are JSON files defining widgets to display:
+- OpenWeatherMap is picky. Use comma-separated locations like `Hesston,KS,US`.
+- Credentials may be stored as environment references, e.g. `${OPENWEATHER_API_KEY}`.
+- The Data tab can test each source and shows raw upstream errors with secrets redacted.
+
+## CLI commands
+
+```bash
+divoom --help
+
+# Device control
+divoom discover
+divoom test
+divoom brightness 50
+divoom on
+divoom off
+divoom clear --color "#000000"
+
+# Render layouts
+divoom render config/layouts/dashboard.json --data config/sample_data.demo.json --output preview.png
+divoom render config/layouts/dashboard.json --ip 192.168.1.100
+
+divoom live config/layouts/dashboard.json --output live-preview.png
+divoom fetch all
+
+# Studio server
+divoom serve config/layouts/dashboard.json --web --port 8080 --no-device
+divoom serve config/layouts/dashboard.json --web --port 8080
+```
+
+## Layout format
+
+Layouts are plain JSON files under `config/layouts/`.
+
+Minimal example:
 
 ```json
 {
-  "name": "my_layout",
+  "name": "hello-pixoo",
   "background": "#000000",
   "refresh_seconds": 300,
   "widgets": [
@@ -186,61 +210,34 @@ Layouts are JSON files defining widgets to display:
       "x": 2,
       "y": 2,
       "font": "5x7",
-      "text": "Hello",
+      "text": "HELLO",
       "color": "#FFFFFF"
     },
     {
       "type": "text",
       "x": 2,
-      "y": 12,
+      "y": 14,
       "font": "4x6",
-      "data_source": "stocks.AAPL.price",
-      "format": "${value:.2f}",
-      "color": "#00FF00"
-    },
-    {
-      "type": "rect",
-      "x": 0,
-      "y": 60,
-      "width": 64,
-      "height": 4,
-      "color": "#0000FF",
-      "filled": true
-    },
-    {
-      "type": "line",
-      "x1": 0,
-      "y1": 32,
-      "x2": 63,
-      "y2": 32,
-      "color": "#333333"
+      "data_source": "weather.temp",
+      "format": "{value}°",
+      "color": "#FFAA00"
     }
   ]
 }
 ```
 
-### Widget Types
+Widget types:
 
-#### Text Widget
-- `x`, `y` - Position (0-63)
-- `font` - "5x7" or "4x6"
-- `text` - Static text content
-- `data_source` - Dynamic data path (e.g., "stocks.AAPL.price")
-- `format` - Python format string (e.g., "${value:.2f}")
-- `color` - Hex color or conditional color object
+- `text`: static text or a `data_source` binding
+- `rect`: filled or outlined rectangle
+- `line`: single-pixel line
 
-#### Rectangle Widget
-- `x`, `y` - Position
-- `width`, `height` - Dimensions
-- `color` - Hex color
-- `filled` - true/false
+Data paths:
 
-#### Line Widget
-- `x1`, `y1` - Start point
-- `x2`, `y2` - End point
-- `color` - Hex color
+- Stocks: `stocks.{SYMBOL}.price`, `stocks.{SYMBOL}.change`, `stocks.{SYMBOL}.percent`
+- Weather: `weather.temp`, `weather.temp_min`, `weather.temp_max`, `weather.main`, `weather.humidity`
 
-### Conditional Colors
+Conditional colors:
 
 ```json
 {
@@ -254,31 +251,37 @@ Layouts are JSON files defining widgets to display:
 }
 ```
 
-### Data Source Paths
-
-- **Stocks**: `stocks.{SYMBOL}.price`, `stocks.{SYMBOL}.change`, `stocks.{SYMBOL}.percent`
-- **Weather**: `weather.temp`, `weather.temp_min`, `weather.temp_max`, `weather.main`, `weather.humidity`
-
 ## Development
 
 ```bash
-# Install dev dependencies
-uv pip install -e ".[dev]"
-
-# Run tests
-pytest
-
-# Type checking
-mypy src/
-
-# Linting
-ruff check src/
+make install
+make test
+make lint
+make render-examples
 ```
+
+Direct commands:
+
+```bash
+uv pip install -e ".[dev]"
+pytest -q
+ruff check src/divoom_client/web tests
+python -m build
+```
+
+## Release packaging
+
+This repo includes `.github/workflows/release.yml`.
+
+When a tag like `v0.1.0` is pushed, GitHub Actions will:
+
+- run tests
+- build Python distribution artifacts
+- create a GitHub release with generated notes
+- build and push a Docker image to GitHub Container Registry
+
+No tag, no release. A rare case where doing nothing is a feature.
 
 ## License
 
-MIT License - see LICENSE file for details.
-
-## Author
-
-Jason Person (jsperson@gmail.com)
+MIT License.
