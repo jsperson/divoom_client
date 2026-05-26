@@ -232,6 +232,8 @@ def create_app(display_manager: Any) -> FastAPI:
         temp_path.rename(layout_path)
         if display_manager.layout and display_manager.layout.name == safe_name:
             display_manager.load_layout(layout_path)
+            reschedule_layout_refresh()
+            display_manager._render_and_send()
         return {"success": True, "path": str(layout_path)}
 
     @app.delete("/api/layouts/{name}")
@@ -297,12 +299,18 @@ def create_app(display_manager: Any) -> FastAPI:
             json.dump(data, f, indent=2)
         return {"success": True, "layout": name}
 
+    def reschedule_layout_refresh() -> None:
+        """Reschedule the active layout refresh job when a layout setting changes."""
+        if hasattr(display_manager, "reschedule_layout_refresh"):
+            display_manager.reschedule_layout_refresh()
+
     @app.post("/api/layout/load/{name}")
     async def load_layout(name: str) -> dict[str, Any]:
         """Load and activate a layout."""
         layout_path = layout_file(name)
         if not display_manager.load_layout(layout_path):
             raise HTTPException(status_code=400, detail=f"Failed to load layout: {name}")
+        reschedule_layout_refresh()
         display_manager._render_and_send()
         return {"success": True, "layout": name}
 

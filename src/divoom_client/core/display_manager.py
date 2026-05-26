@@ -200,6 +200,17 @@ class DisplayManager:
             logger.error(f"Failed to send frame: {e}")
             return False
 
+    def reschedule_layout_refresh(self) -> None:
+        """Replace the scheduled display refresh job with the current layout setting."""
+        self._scheduler.remove_job("layout_refresh")
+        if self._layout and self._layout.refresh_seconds and self._scheduler.is_running:
+            self._scheduler.add_job(
+                self._render_and_send,
+                interval_seconds=self._layout.refresh_seconds,
+                job_id="layout_refresh",
+                name=f"Refresh display every {self._layout.refresh_seconds}s",
+            )
+
     async def start(self) -> None:
         """Start the display manager with scheduled updates."""
         logger.info("Starting display manager...")
@@ -207,14 +218,7 @@ class DisplayManager:
         # Start scheduler (will do initial data fetch)
         await self._scheduler.start()
 
-        # Add layout refresh job if layout has refresh_seconds
-        if self._layout and self._layout.refresh_seconds:
-            self._scheduler.add_job(
-                self._render_and_send,
-                interval_seconds=self._layout.refresh_seconds,
-                job_id="layout_refresh",
-                name=f"Refresh display every {self._layout.refresh_seconds}s",
-            )
+        self.reschedule_layout_refresh()
 
         logger.info("Display manager started")
 

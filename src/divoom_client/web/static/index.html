@@ -64,7 +64,9 @@
     }
     input::placeholder, textarea::placeholder { color:var(--faint); }
     input:focus, select:focus, textarea:focus { border-color:rgba(97,218,251,.6); box-shadow:0 0 0 3px rgba(97,218,251,.12); }
-    input[type=color] { height:38px; padding:3px; }
+    input[type=color] { height:38px; padding:3px; background:var(--picker-color,#000000); }
+    input[type=color]::-webkit-color-swatch-wrapper { padding:0; }
+    input[type=color]::-webkit-color-swatch { border:0; border-radius:7px; background-color:var(--picker-color,#000000); }
     input[type=file].file-input { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
     .app { display:grid; grid-template-columns: 284px minmax(0, 1fr) 318px; grid-template-rows: 68px 1fr; min-height:100vh; }
     header {
@@ -264,6 +266,7 @@
               <div class="metric"><div class="label">Layout</div><div class="value" id="metricLayout">—</div></div>
               <div class="metric"><div class="label">Widgets</div><div class="value" id="metricWidgets">0</div></div>
             </div>
+            <div class="card"><h2>Layout Settings</h2><div id="layoutSettings" class="hint">Load a layout to edit background and display refresh interval.</div></div>
             <div class="card properties"><h2>Properties</h2><div id="properties" class="hint">Select a widget on the canvas or in the layer list.</div></div>
             <div class="card"><h2>Layers</h2><div id="widgetList"></div></div>
           </div>
@@ -318,7 +321,42 @@ async function loadLayouts(){ layouts=await api('/api/layouts/meta'); renderLayo
 function renderLayoutList(){ const q=(layoutSearch.value||'').toLowerCase(); layoutList.innerHTML=layouts.filter(l=>l.name.toLowerCase().includes(q)).map(l=>`<div class="layout-item ${l.active?'active':''}" onclick="activateLayout('${esc(l.name)}')"><div class="between"><b>${l.name}</b>${l.active?'<span class="badge ok">active</span>':''}</div><div class="hint">${l.widgets} widgets · refresh ${l.refresh_seconds||'—'}s</div></div>`).join('')||'<div class="hint">No layouts</div>'; }
 async function activateLayout(name){ await api('/api/layout/load/'+encodeURIComponent(name),{method:'POST'}); currentLayout=name; log('Loaded '+name,'ok'); await refreshAll(); }
 async function loadCurrentLayout(){ if(!currentLayout) return; current=await api('/api/layout'); selected=null; dirty=false; undoStack=[]; redoStack=[]; renderAll(); }
-function renderAll(){ renderCanvas(); renderWidgets(); renderProperties(); metricLayout.textContent=current?.name||'—'; metricWidgets.textContent=current?.widgets?.length||0; dirtyHint.textContent=current?`${dirty?'Unsaved changes':'Saved'} · ${current.name}`:'No layout loaded'; renderChecks(); }
+function renderAll(){ renderCanvas(); renderWidgets(); renderProperties(); renderLayoutSettings(); metricLayout.textContent=current?.name||'—'; metricWidgets.textContent=current?.widgets?.length||0; dirtyHint.textContent=current?`${dirty?'Unsaved changes':'Saved'} · ${current.name}`:'No layout loaded'; renderChecks(); }
+function renderLayoutSettings(){
+  if(!current){ layoutSettings.innerHTML='<div class="empty-state">Load a layout to edit background and display refresh interval.</div>'; return; }
+  const bg=normalizeHex(current.background||'#000000');
+  layoutSettings.innerHTML=`<div class="stack">
+    <label><span>Name</span><input value="${attr(current.name)}" disabled></label>
+    <div class="grid2"><label><span>Background picker</span><input id="layoutBg" type="color" value="${attr(bg)}" style="--picker-color:${attr(bg)};background:${attr(bg)}" oninput="changeLayoutBackground(this.value)" onchange="changeLayoutBackground(this.value)"></label><label><span>Background hex</span><input id="layoutBgText" value="${attr(bg)}" placeholder="#000000" onchange="changeLayoutBackground(this.value)"></label></div>
+    <label><span>Display refresh seconds</span><input id="layoutRefresh" type="number" min="1" value="${current.refresh_seconds||60}" onchange="changeLayoutRefresh(this.value)"></label>
+    <button onclick="saveLayoutSettings()">Save layout settings</button>
+    <div class="hint">Display refresh controls how often the active layout is re-rendered and sent to the Pixoo.</div>
+  </div>`;
+}
+function markLayoutDirty(){ dirty=true; if(current) dirtyHint.textContent=`Unsaved changes · ${current.name}`; }
+function parseHex(value){
+  const raw=String(value||'').trim();
+  const six=/^#([0-9a-fA-F]{6})$/.exec(raw);
+  if(six) return '#'+six[1].toLowerCase();
+  const three=/^#([0-9a-fA-F]{3})$/.exec(raw);
+  if(three) return '#'+three[1].split('').map(c=>c+c).join('').toLowerCase();
+  return null;
+}
+function normalizeHex(value){ return parseHex(value) || '#000000'; }
+function syncBackgroundControls(hex){
+  const picker=document.getElementById('layoutBg'); if(picker){ if(picker.value!==hex) picker.value=hex; picker.style.setProperty('--picker-color',hex); picker.style.backgroundColor=hex; }
+  const text=document.getElementById('layoutBgText'); if(text && text.value!==hex) text.value=hex;
+}
+function changeLayoutBackground(value){
+  if(!current) return;
+  const hex=parseHex(value);
+  if(!hex) return;
+  current.background=hex;
+  syncBackgroundControls(hex);
+  markLayoutDirty(); renderCanvas(); schedulePreview();
+}
+function changeLayoutRefresh(value){ if(!current) return; const refresh=parseInt(value||'60',10); current.refresh_seconds=Math.max(1, refresh||60); markLayoutDirty(); }
+async function saveLayoutSettings(){ if(!current) return; changeLayoutBackground(current.background||document.getElementById('layoutBg')?.value||document.getElementById('layoutBgText')?.value||'#000000'); changeLayoutRefresh(document.getElementById('layoutRefresh')?.value||'60'); await saveLayout(); log('Updated layout schedule: '+current.refresh_seconds+'s','ok'); }
 function colorOf(w){ return typeof w.color==='string'?w.color:(w.color?.default||'#ffffff'); }
 function renderCanvas(){ if(!current) return; ctx.imageSmoothingEnabled=false; ctx.fillStyle=current.background||'#000'; ctx.fillRect(0,0,512,512); (current.widgets||[]).forEach(drawWidget); if(selected) drawSelection(selected); }
 function drawWidget(w){ ctx.fillStyle=colorOf(w); ctx.strokeStyle=colorOf(w); ctx.lineWidth=SCALE; if(w.type==='rect'){ w.filled===false?ctx.strokeRect(w.x*SCALE,w.y*SCALE,(w.width||8)*SCALE,(w.height||8)*SCALE):ctx.fillRect(w.x*SCALE,w.y*SCALE,(w.width||8)*SCALE,(w.height||8)*SCALE); } else if(w.type==='line'){ ctx.beginPath(); ctx.moveTo((w.x1||0)*SCALE,(w.y1||0)*SCALE); ctx.lineTo((w.x2||20)*SCALE,(w.y2||0)*SCALE); ctx.stroke(); } else { drawText(previewText(w), w.x||0, w.y||0, colorOf(w)); } }

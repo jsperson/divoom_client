@@ -28,6 +28,8 @@ class FakeManager:
         self.layout = FakeLayout({"name": "Base", "widgets": [], "refresh_seconds": 60})
         self.data: dict[str, Any] = {}
         self.loaded_paths: list[Path] = []
+        self.rescheduled_layout_refreshes = 0
+        self.rendered_frames = 0
 
     def get_status(self) -> dict[str, Any]:
         return {
@@ -46,8 +48,11 @@ class FakeManager:
             self.layout = FakeLayout(json.load(f))
         return True
 
+    def reschedule_layout_refresh(self) -> None:
+        self.rescheduled_layout_refreshes += 1
+
     def _render_and_send(self) -> None:
-        return None
+        self.rendered_frames += 1
 
 
 def make_client(tmp_path: Path) -> tuple[TestClient, FakeManager]:
@@ -118,3 +123,25 @@ def test_activating_layout_uses_safe_resolved_file(tmp_path: Path) -> None:
     assert response.status_code == 200
     assert manager.layout.name == "Base"
     assert manager.loaded_paths[-1] == tmp_path / "config" / "layouts" / "Base.json"
+    assert manager.rescheduled_layout_refreshes == 1
+
+
+def test_saving_active_layout_updates_refresh_schedule(tmp_path: Path) -> None:
+    client, manager = make_client(tmp_path)
+
+    response = client.post(
+        "/api/layouts/Base",
+        json={
+            "layout": {
+                "name": "Base",
+                "background": "#112233",
+                "refresh_seconds": 17,
+                "widgets": [],
+            }
+        },
+    )
+
+    assert response.status_code == 200
+    assert manager.layout.model_dump()["refresh_seconds"] == 17
+    assert manager.rescheduled_layout_refreshes == 1
+    assert manager.rendered_frames == 1

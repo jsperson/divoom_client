@@ -26,3 +26,21 @@ def test_design_checks_are_summarized_not_repeated_warning_badges():
     assert "function summarizeWarnings" in html
     assert "issue-summary" in html
     assert "×" in html
+
+
+def test_studio_exposes_layout_settings_panel():
+    html = STATIC_HTML.read_text(encoding="utf-8")
+
+    assert "Layout Settings" in html
+    assert "Display refresh seconds" in html
+    assert "function saveLayoutSettings" in html
+    assert "Background picker" in html
+    assert "Background hex" in html
+    assert "type=\"color\"" in html
+    assert "oninput=\"changeLayoutBackground(this.value)\"" in html
+    assert "function syncBackgroundControls" in html
+    assert "--picker-color" in html
+    assert "picker.style.backgroundColor=hex" in html
+    assert "changeLayoutBackground(current.background||" in html
+    assert "function parseHex" in html
+    assert "function changeLayoutBackground" in html
