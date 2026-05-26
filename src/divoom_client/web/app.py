@@ -500,17 +500,17 @@ def create_app(display_manager: Any) -> FastAPI:
 
     @app.post("/api/device/reconnect")
     async def reconnect_device() -> dict[str, Any]:
-        """Attempt to reconnect to the device."""
+        """Attempt to reconnect to the configured device."""
         try:
-            # Try to reconnect using stored IP
-            if display_manager._device_ip:
-                from divoom_client.core.pixoo import Pixoo
-                display_manager._device = Pixoo(display_manager._device_ip)
-                return {"success": True, "ip": display_manager._device_ip}
-            else:
-                raise HTTPException(status_code=400, detail="No device IP configured")
+            connected = display_manager.connect()
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
+
+        if not connected:
+            raise HTTPException(status_code=400, detail="Could not reconnect to device")
+
+        status = display_manager.get_status()
+        return {"success": True, "ip": status.get("device_ip")}
 
     @app.get("/api/device/ping")
     async def ping_device() -> dict[str, Any]:
@@ -539,13 +539,20 @@ def create_app(display_manager: Any) -> FastAPI:
         from divoom_client.core.discovery import save_device_config
         from divoom_client.models.config import DeviceConfig
         try:
-            display_manager.connect(ip)
+            connected = display_manager.connect(ip)
+            if not connected:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Could not connect to device at {ip}",
+                )
             config = DeviceConfig(ip_address=ip)
             config_path = display_manager.config_dir / "device.json"
             save_device_config(config, config_path)
             return {"success": True, "ip": ip}
+        except HTTPException:
+            raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
     # --- Data Source APIs ---
 
